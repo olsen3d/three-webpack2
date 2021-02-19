@@ -1,3 +1,5 @@
+/* eslint-disable no-inner-declarations */
+/* eslint-disable max-statements */
 import * as THREE from 'three'
 import { WEBGL } from './webgl'
 import './modal'
