@@ -4,6 +4,8 @@ import * as THREE from 'three'
 import { WEBGL } from './webgl'
 import './modal'
 
+//test
+
 if (WEBGL.isWebGLAvailable()) {
   var camera, scene, renderer
   var plane
