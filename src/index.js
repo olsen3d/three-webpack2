@@ -1,9 +1,11 @@
+/* eslint-disable no-multiple-empty-lines */
 /* eslint-disable default-case */
 /* eslint-disable no-inner-declarations */
 /* eslint-disable max-statements */
 import * as THREE from 'three'
 import { WEBGL } from './webgl'
 import Stats from 'three/examples/jsm/libs/stats.module.js'
+import gsap from 'gsap'
 
 const statsFPS = new Stats()
 statsFPS.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -20,7 +22,7 @@ if (WEBGL.isWebGLAvailable()) {
       1,
       10000
     )
-    camera.position.set(500, 800, 1300)
+    camera.position.set(0, 200, 1300)
     camera.lookAt(0, 0, 0)
 
     scene = new THREE.Scene()
@@ -52,13 +54,14 @@ if (WEBGL.isWebGLAvailable()) {
     scene.add(gridHelper)
 
     const light = new THREE.AmbientLight( 0xffffff, 10)
-    scene.add(light)
+    //scene.add(light)
 
     renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setPixelRatio(window.devicePixelRatio)
     // renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.setSize(720, 480)
-    document.body.appendChild(renderer.domElement)
+    const container = document.getElementById( 'THREEContainer' )
+    container.appendChild(renderer.domElement)
 
     window.addEventListener('resize', onWindowResize, false)
 
@@ -80,10 +83,34 @@ if (WEBGL.isWebGLAvailable()) {
     //cubeMesh.position.z += randomVals[2]
     }
   }
-  window.setInterval(randomPosition, 300)
+  //window.setInterval(randomPosition, 300)
+
+
+  const animateCube = () => {
+    gsap.to(cubeMesh.position, { duration: 0.75, ease: 'power2.out', x: 600 })
+  }
+
+  const button = document.getElementById( 'animateButton' )
+  button.addEventListener('click', animateCube)
+
+
+
+
+const updateCamera = () => {
+  var startRotation = new THREE.Euler().copy( camera.rotation );
+  camera.lookAt( cubeMesh.position );
+  var endRotation = new THREE.Euler().copy( camera.rotation );
+  camera.rotation.copy( startRotation );
+  gsap.to(camera.rotation, { duration: 0.75, ease: 'power2.out', rotation: endRotation })
+}
+
+
+
+
+
 
   const update = () => {
-    camera.lookAt(cubeMesh.position)
+    updateCamera()
   }
 
   const render = () => renderer.render(scene, camera)
