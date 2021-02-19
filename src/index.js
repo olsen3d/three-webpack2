@@ -11,7 +11,7 @@ document.body.appendChild( statsFPS.dom )
 
 if (WEBGL.isWebGLAvailable()) {
   let camera, scene, renderer
-  let cubeMesh
+  let cubeMesh, cubeBG1Mesh, cubeBG2Mesh
 
   function init() {
     camera = new THREE.PerspectiveCamera(
@@ -24,7 +24,14 @@ if (WEBGL.isWebGLAvailable()) {
     camera.lookAt(0, 0, 0)
 
     scene = new THREE.Scene()
-    scene.background = new THREE.Color(0xf0f0f0)
+
+    {
+      const near = 1000;
+      const far = 3000;
+      const color = 0xf0f0f0;
+      scene.fog = new THREE.Fog(color, near, far);
+      scene.background = new THREE.Color(color);
+    }
 
 
     const cubeGeo = new THREE.BoxGeometry(150, 150, 150)
@@ -32,6 +39,14 @@ if (WEBGL.isWebGLAvailable()) {
     const materialBrick = new THREE.MeshBasicMaterial( { map: texture } )
     cubeMesh = new THREE.Mesh(cubeGeo, materialBrick)
     scene.add(cubeMesh)
+
+    const cubeBG1 = new THREE.BoxGeometry(150, 150, 150)
+    const cubeBG2 = new THREE.BoxGeometry(150, 150, 150)
+    cubeBG1Mesh = new THREE.Mesh(cubeBG1, materialBrick)
+    cubeBG1Mesh.position.z = -500
+    cubeBG2Mesh = new THREE.Mesh(cubeBG2, materialBrick)
+    cubeBG2Mesh.position.z = -1200
+    scene.add(cubeBG1Mesh, cubeBG2Mesh)
 
     var gridHelper = new THREE.GridHelper(1000, 20, 0xff0000)
     scene.add(gridHelper)
@@ -59,15 +74,16 @@ if (WEBGL.isWebGLAvailable()) {
 
   const randomPosition = () => {
     if (cubeMesh.position.x < 100 || cubeMesh.position.y < 100 || cubeMesh.position.z < 100) {
-    const randomVals = [Math.random() * (5 - -5) + -5, Math.random() * (5 - -5) + -5, Math.random() * (5 - -5) + -5]
+    const randomVals = [Math.random() * (15 - -15) + -15, Math.random() * (15 - -15) + -15, Math.random() * (15 - -15) + -15]
     cubeMesh.position.x += randomVals[0]
-    cubeMesh.position.y += randomVals[1]
-    cubeMesh.position.z += randomVals[2]
+    //cubeMesh.position.y += randomVals[1]
+    //cubeMesh.position.z += randomVals[2]
     }
   }
-  window.setInterval(randomPosition, 100)
+  window.setInterval(randomPosition, 300)
 
   const update = () => {
+    camera.lookAt(cubeMesh.position)
   }
 
   const render = () => renderer.render(scene, camera)
