@@ -58,8 +58,8 @@ if (WEBGL.isWebGLAvailable()) {
 
     renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setPixelRatio(window.devicePixelRatio)
-    // renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setSize(720, 480)
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    //renderer.setSize(720, 480)
     const container = document.getElementById( 'THREEContainer' )
     container.appendChild(renderer.domElement)
 
@@ -79,8 +79,8 @@ if (WEBGL.isWebGLAvailable()) {
     if (cubeMesh.position.x < 100 || cubeMesh.position.y < 100 || cubeMesh.position.z < 100) {
     const randomVals = [Math.random() * (15 - -15) + -15, Math.random() * (15 - -15) + -15, Math.random() * (15 - -15) + -15]
     cubeMesh.position.x += randomVals[0]
-    //cubeMesh.position.y += randomVals[1]
-    //cubeMesh.position.z += randomVals[2]
+    cubeMesh.position.y += randomVals[1]
+    cubeMesh.position.z += randomVals[2]
     }
   }
   //window.setInterval(randomPosition, 300)
@@ -94,6 +94,23 @@ if (WEBGL.isWebGLAvailable()) {
   button.addEventListener('click', animateCube)
 
 
+const mouse = new THREE.Vector2()
+function onDocumentMouseMove(event) {
+  event.preventDefault();
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+}
+document.addEventListener('mousemove', onDocumentMouseMove, false);
+
+// window.setInterval(() => {
+//   console.log(mouse.x * 600)
+//   console.log(cubeMesh.position.x)
+// }, 500)
+
+const updateCubePosition = () => {
+  //cubeMesh.position.x = mouse.x * 600
+  gsap.to(cubeMesh.position, { duration: 5, ease: 'power2.out', x: mouse.x * 600 })
+}
 
 
 const updateCamera = () => {
@@ -109,8 +126,18 @@ const updateCamera = () => {
 
 
 
+
+
+
+
+
+
+
+
+
   const update = () => {
     updateCamera()
+    updateCubePosition()
   }
 
   const render = () => renderer.render(scene, camera)
