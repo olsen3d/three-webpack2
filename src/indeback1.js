@@ -8,8 +8,6 @@ import Stats from 'three/examples/jsm/libs/stats.module.js'
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
 import gsap from 'gsap'
 
-//https://threejs.org/examples/#webgl_geometry_terrain_fog
-
 
 const statsFPS = new Stats()
 statsFPS.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -17,20 +15,19 @@ document.body.appendChild( statsFPS.dom )
 
 if (WEBGL.isWebGLAvailable()) {
   let camera, scene, renderer
+  let cubeMesh, cubeBG1Mesh, cubeBG2Mesh, sphereMesh
   let modelReady = false
-  let ingenuityController, cubeHelperMesh
-
-  let rotor1, rotor2
+  let ingenuityController
 
   function init() {
     camera = new THREE.PerspectiveCamera(
-      75,
+      45,
       window.innerWidth / window.innerHeight,
       1,
       10000
     )
-    camera.position.set(0, 350, 1000)
-    camera.lookAt(0, 350, 0)
+    camera.position.set(0, 250, 1300)
+    camera.lookAt(0, 250, 0)
 
     scene = new THREE.Scene()
 
@@ -42,20 +39,18 @@ if (WEBGL.isWebGLAvailable()) {
       scene.background = new THREE.Color(color);
     }
 
-    const cubeHelper = new THREE.BoxGeometry(150, 150, 150)
-    const materialWire = new THREE.MeshBasicMaterial( {color: 0x00ff00, wireframe: true} )
-    cubeHelperMesh = new THREE.Mesh(cubeHelper, materialWire)
-    scene.add(cubeHelperMesh)
 
 
-
+    const cubeGeo = new THREE.BoxGeometry(150, 150, 150)
+    const texture = new THREE.TextureLoader().load( '../static/textures/brick.jpg' )
+    const materialBrick = new THREE.MeshBasicMaterial( { map: texture } )
+    cubeMesh = new THREE.Mesh(cubeGeo, materialBrick)
+    cubeMesh.visible = true
+    cubeMesh.rotation.y = 0.45
+    cubeMesh.position.y = 50
+    scene.add(cubeMesh)
 
     ingenuityController = new THREE.Group()
-    scene.add(ingenuityController)
-    ingenuityController.rotation.y = 0.45
-    ingenuityController.position.y = 50
-    ingenuityController.add(cubeHelperMesh)
-
 
     const loader = new GLTFLoader()
     loader.load( '../static/models/ingenuity.glb', function ( gltf ) {
@@ -64,11 +59,7 @@ if (WEBGL.isWebGLAvailable()) {
       model.position.y = -50
       scene.add( model );
       ingenuityController.add(model)
-      model.traverse((o) => {
-        if (o.name === 'rotors_01') rotor1 = o
-        if (o.name === 'rotors_02') rotor2 = o
-      })
-
+      cubeMesh.attach(model)
       modelReady = true
     }, undefined, function ( error ) {
       console.error( error );
@@ -83,6 +74,7 @@ if (WEBGL.isWebGLAvailable()) {
     renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setPixelRatio(window.devicePixelRatio)
     renderer.setSize(window.innerWidth, window.innerHeight)
+    //renderer.setSize(720, 480)
     const container = document.getElementById( 'THREEContainer' )
     container.appendChild(renderer.domElement)
 
@@ -122,31 +114,30 @@ let hoverHeight = {
   }
 }
 
-const maxHorizontalPosition = 1000
+const maxHorizontalPosition = 600
 const updateHoverMousePosition = () => {
-  gsap.to(ingenuityController.position, { duration: 5, ease: 'power2.out', x: mouse.x * maxHorizontalPosition })
+  gsap.to(cubeMesh.position, { duration: 5, ease: 'power2.out', x: mouse.x * maxHorizontalPosition })
   gsap.to(hoverHeight, { duration: 5, ease: 'power2.out', mouseAmount: mouse.y * hoverHeight.mouseMax })
 }
 
 const updateHoverMouseRotation = () => {
-  const distance = (mouse.x * maxHorizontalPosition) - ingenuityController.position.x
-  ingenuityController.rotation.z = THREE.Math.degToRad(distance / -40)
+  const distance = (mouse.x * maxHorizontalPosition) - cubeMesh.position.x
+  cubeMesh.rotation.z = THREE.Math.degToRad(distance / -40)
 }
 
 const takeOff = () => {
   gsap.to(hoverHeight, { duration: 2, ease: 'power1.inOut', normal: hoverHeight.normalMax })
-  gsap.to(ingenuityController.rotation, { duration: 4, ease: 'back.inOut(4)', y: 0 })
+  gsap.to(cubeMesh.rotation, { duration: 4, ease: 'back.inOut(4)', y: 0 })
 }
 
 
 const hover = () => {
   let isUp = false
-  let amount = (Math.random() * hoverHeight.hoverMax) + hoverHeight.hoverMin
+let amount = (Math.random() * hoverHeight.hoverMax) + hoverHeight.hoverMin
 
-  const updateHoverVerticalPosition = (amount) => {
+  const updateCubeVerticalPosition = (amount) => {
     gsap.to(hoverHeight, { duration: 4, ease: 'back.inOut(4)', hoverAmount: amount })
   }
-
   window.setInterval(() => {
     isUp = !isUp
     if (isUp) {
@@ -154,7 +145,7 @@ const hover = () => {
     } else {
       amount = -amount
     }
-    updateHoverVerticalPosition(amount)
+    updateCubeVerticalPosition(amount)
   }, 4000)
 }
 
@@ -177,9 +168,6 @@ const updateCamera = () => {
   let startTakeOff = false
 
   const update = () => {
-    if (rotor1) rotor1.rotation.x += 0.3
-    if (rotor2) rotor2.rotation.x -= 0.4
-
     if (modelReady && !startTakeOff) {
       setTimeout(() => {
         startTakeOff = true
@@ -191,13 +179,15 @@ const updateCamera = () => {
 
     if (modelReady) {
       updateCamera()
-      ingenuityController.position.y = hoverHeight.currentX()
+      cubeMesh.position.y = hoverHeight.currentX()
       updateHoverMouseRotation()
       updateHoverMousePosition()
     }
   }
 
-  const fixedUpdate = () => {}
+  const fixedUpdate = () => {
+    
+  }
 
   const fixedUpdateFrequency = 33.3 //33.3ms ~30FPS
   window.setInterval(fixedUpdate, fixedUpdateFrequency)
