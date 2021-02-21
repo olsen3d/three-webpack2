@@ -22,7 +22,7 @@ if (WEBGL.isWebGLAvailable()) {
       1,
       10000
     )
-    camera.position.set(0, 200, 1300)
+    camera.position.set(0, 250, 1300)
     camera.lookAt(0, 0, 0)
 
     scene = new THREE.Scene()
@@ -86,12 +86,12 @@ if (WEBGL.isWebGLAvailable()) {
   //window.setInterval(randomPosition, 300)
 
 
-  const animateCube = () => {
-    gsap.to(cubeMesh.position, { duration: 0.75, ease: 'power2.out', x: 600 })
-  }
+  // const animateCube = () => {
+  //   gsap.to(cubeMesh.position, { duration: 0.75, ease: 'power2.out', x: 600 })
+  // }
 
-  const button = document.getElementById( 'animateButton' )
-  button.addEventListener('click', animateCube)
+  // const button = document.getElementById( 'animateButton' )
+  // button.addEventListener('click', animateCube)
 
 
 const mouse = new THREE.Vector2()
@@ -107,18 +107,54 @@ document.addEventListener('mousemove', onDocumentMouseMove, false);
 //   console.log(cubeMesh.position.x)
 // }, 500)
 
+let hoverHeight = {
+  normal: 250,
+  hoverAmount: 0,
+  mouseAmount: 0,
+  hoverMax: 25,
+  mouseMax: 100,
+  current: function() {
+    return this.normal + this.hoverAmount + this.mouseAmount
+  }
+}
+
 const updateCubePosition = () => {
-  //cubeMesh.position.x = mouse.x * 600
-  gsap.to(cubeMesh.position, { duration: 5, ease: 'power2.out', x: mouse.x * 600 })
+  const maxHorizontalPosition = 600
+  gsap.to(cubeMesh.position, { duration: 5, ease: 'power2.out', x: mouse.x * maxHorizontalPosition })
+  gsap.to(hoverHeight, { duration: 5, ease: 'power2.out', mouseAmount: mouse.y * hoverHeight.mouseMax })
+}
+
+const takeOff = () => {
+  gsap.to(cubeMesh.position, { duration: 2, ease: 'power1.inOut', y: hoverHeight })
+}
+
+
+const hover = () => {
+  let isUp = false
+let amount = Math.random() * hoverHeight.hoverMax
+
+  const updateCubeVerticalPosition = (isUp, amount) => {
+    gsap.to(hoverHeight, { duration: 4, ease: 'back.inOut(4)', hoverAmount: amount })
+  }
+  window.setInterval(() => {
+    isUp = !isUp
+    if (isUp) {
+      amount = Math.random() * hoverHeight.hoverMax
+    } else {
+      amount = -amount
+    }
+    updateCubeVerticalPosition(isUp, amount)
+  }, 4000)
 }
 
 
 const updateCamera = () => {
-  var startRotation = new THREE.Euler().copy( camera.rotation );
-  camera.lookAt( cubeMesh.position );
-  var endRotation = new THREE.Euler().copy( camera.rotation );
-  camera.rotation.copy( startRotation );
-  gsap.to(camera.rotation, { duration: 0.75, ease: 'power2.out', rotation: endRotation })
+  // var startRotation = new THREE.Euler().copy( camera.rotation );
+  // camera.lookAt( cubeMesh.position );
+  // var endRotation = new THREE.Euler().copy( camera.rotation );
+  // camera.rotation.copy( startRotation );
+  const maxRotation = 200
+  gsap.to(camera.rotation, { duration: 7, ease: 'power1.out', y: mouse.x * maxRotation * 0.001 * -1 })
 }
 
 
@@ -131,14 +167,27 @@ const updateCamera = () => {
 
 
 
-
+let startTakeOff = false
 
 
 
   const update = () => {
+    if (!startTakeOff) {
+      startTakeOff = true
+      takeOff()
+      hover()
+    }
+
     updateCamera()
+    cubeMesh.position.y = hoverHeight.current()
+  }
+
+  const fixedUpdate = () => {
     updateCubePosition()
   }
+
+  const fixedUpdateFrequency = 33.3 //33.3ms ~30FPS
+  window.setInterval(fixedUpdate, fixedUpdateFrequency)
 
   const render = () => renderer.render(scene, camera)
 
