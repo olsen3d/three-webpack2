@@ -5,7 +5,9 @@
 import * as THREE from 'three'
 import { WEBGL } from './webgl'
 import Stats from 'three/examples/jsm/libs/stats.module.js'
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
 import gsap from 'gsap'
+
 
 const statsFPS = new Stats()
 statsFPS.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -13,7 +15,8 @@ document.body.appendChild( statsFPS.dom )
 
 if (WEBGL.isWebGLAvailable()) {
   let camera, scene, renderer
-  let cubeMesh, cubeBG1Mesh, cubeBG2Mesh
+  let cubeMesh, cubeBG1Mesh, cubeBG2Mesh, sphereMesh
+  let modelReady = false
 
   function init() {
     camera = new THREE.PerspectiveCamera(
@@ -23,7 +26,7 @@ if (WEBGL.isWebGLAvailable()) {
       10000
     )
     camera.position.set(0, 250, 1300)
-    camera.lookAt(0, 0, 0)
+    camera.lookAt(0, 250, 0)
 
     scene = new THREE.Scene()
 
@@ -35,12 +38,34 @@ if (WEBGL.isWebGLAvailable()) {
       scene.background = new THREE.Color(color);
     }
 
+    const sphereGeo = new THREE.SphereGeometry(50, 32, 32)
+    const sphereMat = new THREE.MeshBasicMaterial({color: 0xff0000})
+    sphereMesh = new THREE.Mesh(sphereGeo, sphereMat)
+    sphereMesh.position.y = 150
+    scene.add(sphereMesh)
+
 
     const cubeGeo = new THREE.BoxGeometry(150, 150, 150)
     const texture = new THREE.TextureLoader().load( '../static/textures/brick.jpg' )
     const materialBrick = new THREE.MeshBasicMaterial( { map: texture } )
     cubeMesh = new THREE.Mesh(cubeGeo, materialBrick)
+    cubeMesh.rotation.y = 0.45
+    cubeMesh.position.y = 50
     scene.add(cubeMesh)
+
+    const loader = new GLTFLoader()
+    loader.load( '../static/models/ingenuity.glb', function ( gltf ) {
+      var model = gltf.scene;
+      model.scale.set(500, 500, 500)
+      scene.add( model );
+      cubeMesh.attach(model)
+      modelReady = true
+    }, undefined, function ( error ) {
+      console.error( error );
+    } )
+
+    const ambientLight = new THREE.AmbientLight( 0xffffff)
+    scene.add(ambientLight)
 
     const cubeBG1 = new THREE.BoxGeometry(150, 150, 150)
     const cubeBG2 = new THREE.BoxGeometry(150, 150, 150)
@@ -108,30 +133,38 @@ document.addEventListener('mousemove', onDocumentMouseMove, false);
 // }, 500)
 
 let hoverHeight = {
-  normal: 250,
+  normal: 100,
+  normalMax: 300,
   hoverAmount: 0,
   mouseAmount: 0,
+  hoverMin: 10,
   hoverMax: 25,
-  mouseMax: 100,
-  current: function() {
+  mouseMax: 150,
+  currentX: function() {
     return this.normal + this.hoverAmount + this.mouseAmount
   }
 }
 
-const updateCubePosition = () => {
-  const maxHorizontalPosition = 600
+const maxHorizontalPosition = 600
+const updateHoverMousePosition = () => {
   gsap.to(cubeMesh.position, { duration: 5, ease: 'power2.out', x: mouse.x * maxHorizontalPosition })
   gsap.to(hoverHeight, { duration: 5, ease: 'power2.out', mouseAmount: mouse.y * hoverHeight.mouseMax })
 }
 
+const updateHoverMouseRotation = () => {
+  const distance = (mouse.x * maxHorizontalPosition) - cubeMesh.position.x
+  cubeMesh.rotation.z = THREE.Math.degToRad(distance / -40)
+}
+
 const takeOff = () => {
-  gsap.to(cubeMesh.position, { duration: 2, ease: 'power1.inOut', y: hoverHeight })
+  gsap.to(hoverHeight, { duration: 2, ease: 'power1.inOut', normal: hoverHeight.normalMax })
+  gsap.to(cubeMesh.rotation, { duration: 4, ease: 'back.inOut(4)', y: 0 })
 }
 
 
 const hover = () => {
   let isUp = false
-let amount = Math.random() * hoverHeight.hoverMax
+let amount = (Math.random() * hoverHeight.hoverMax) + hoverHeight.hoverMin
 
   const updateCubeVerticalPosition = (amount) => {
     gsap.to(hoverHeight, { duration: 4, ease: 'back.inOut(4)', hoverAmount: amount })
@@ -139,7 +172,7 @@ let amount = Math.random() * hoverHeight.hoverMax
   window.setInterval(() => {
     isUp = !isUp
     if (isUp) {
-      amount = Math.random() * hoverHeight.hoverMax
+      amount = (Math.random() * hoverHeight.hoverMax) + hoverHeight.hoverMin
     } else {
       amount = -amount
     }
@@ -149,10 +182,6 @@ let amount = Math.random() * hoverHeight.hoverMax
 
 
 const updateCamera = () => {
-  // var startRotation = new THREE.Euler().copy( camera.rotation );
-  // camera.lookAt( cubeMesh.position );
-  // var endRotation = new THREE.Euler().copy( camera.rotation );
-  // camera.rotation.copy( startRotation );
   const maxRotation = 200
   gsap.to(camera.rotation, { duration: 7, ease: 'power1.out', y: mouse.x * maxRotation * 0.001 * -1 })
 }
@@ -167,23 +196,28 @@ const updateCamera = () => {
 
 
 
-let startTakeOff = false
-
-
+  let startTakeOff = false
 
   const update = () => {
-    if (!startTakeOff) {
-      startTakeOff = true
+    if (modelReady && !startTakeOff) {
+      setTimeout(() => {
+        startTakeOff = true
+
+      }, 1000)
       takeOff()
       hover()
     }
 
-    updateCamera()
-    cubeMesh.position.y = hoverHeight.current()
+    if (modelReady) {
+      updateCamera()
+      cubeMesh.position.y = hoverHeight.currentX()
+      updateHoverMouseRotation()
+      updateHoverMousePosition()
+    }
   }
 
   const fixedUpdate = () => {
-    updateCubePosition()
+    
   }
 
   const fixedUpdateFrequency = 33.3 //33.3ms ~30FPS
