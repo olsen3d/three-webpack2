@@ -133,7 +133,7 @@ const hover = () => {
   let isUp = false
 let amount = Math.random() * hoverHeight.hoverMax
 
-  const updateCubeVerticalPosition = (isUp, amount) => {
+  const updateCubeVerticalPosition = (amount) => {
     gsap.to(hoverHeight, { duration: 4, ease: 'back.inOut(4)', hoverAmount: amount })
   }
   window.setInterval(() => {
@@ -143,7 +143,7 @@ let amount = Math.random() * hoverHeight.hoverMax
     } else {
       amount = -amount
     }
-    updateCubeVerticalPosition(isUp, amount)
+    updateCubeVerticalPosition(amount)
   }, 4000)
 }
 
