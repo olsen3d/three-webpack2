@@ -177,13 +177,9 @@ const updateCamera = () => {
   let startTakeOff = false
 
   const update = () => {
-    if (rotor1) rotor1.rotation.x += 0.3
-    if (rotor2) rotor2.rotation.x -= 0.4
-
     if (modelReady && !startTakeOff) {
       setTimeout(() => {
         startTakeOff = true
-
       }, 1000)
       takeOff()
       hover()
@@ -194,6 +190,8 @@ const updateCamera = () => {
       ingenuityController.position.y = hoverHeight.currentX()
       updateHoverMouseRotation()
       updateHoverMousePosition()
+      rotor1.rotation.x += 0.3
+      rotor2.rotation.x -= 0.4
     }
   }
 
@@ -204,16 +202,16 @@ const updateCamera = () => {
 
   const render = () => renderer.render(scene, camera)
 
-  const animate = () => {
+  const renderLoop = () => {
     statsFPS.begin()
     update()
     render()
     statsFPS.end()
-    requestAnimationFrame( animate )
+    requestAnimationFrame( renderLoop )
   }
 
   init()
-  animate()
+  renderLoop()
 
 } else {
   var warning = WEBGL.getWebGLErrorMessage()
