@@ -6,61 +6,90 @@ import * as THREE from 'three'
 import { WEBGL } from './webgl'
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
+import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader.js'
 import gsap from 'gsap'
 
-//https://threejs.org/examples/#webgl_geometry_terrain_fog
 
+
+//DEBUG
+
+
+console.log(DRACOLoader)
 
 const statsFPS = new Stats()
 statsFPS.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
 document.body.appendChild( statsFPS.dom )
 
-const debugArea = document.querySelector('#debug')
+const debug1 = document.querySelector('#debug1')
+const debug2 = document.querySelector('#debug2')
+
+
+
+//MAIN
 
 if (WEBGL.isWebGLAvailable()) {
-  let camera, scene, renderer
-  let modelReady = false
-  let ingenuityController, cubeHelperMesh
 
+  //VARIABLES
+
+  let camera, scene, renderer
+  let ingenuityController, cubeHelperMesh
   let rotor1, rotor2
 
+  //PRE-LOAD CONDITIONALS
+
+  let modelReady = false
+
+
+  //INITIALIZE THREE
+
   function init() {
+
+    //CAMERA
     camera = new THREE.PerspectiveCamera(
       75,
       window.innerWidth / window.innerHeight,
       1,
-      10000
+      50000
     )
     camera.position.set(0, 350, 1000)
     camera.lookAt(0, 350, 0)
 
+    //SCENE
     scene = new THREE.Scene()
 
+    //FOG
     {
-      const near = 1000;
-      const far = 3000;
-      const color = 0xf0f0f0;
+      const near = -5000;
+      const far = 30000;
+      const color = 0xd4bfaf;
       scene.fog = new THREE.Fog(color, near, far);
-      scene.background = new THREE.Color(color);
+      //scene.background = new THREE.Color(color);
     }
 
+    //DEBUG MODELS AND HELPERS
     const cubeHelper = new THREE.BoxGeometry(150, 150, 150)
     const materialWire = new THREE.MeshBasicMaterial( {color: 0x00ff00, wireframe: true} )
     cubeHelperMesh = new THREE.Mesh(cubeHelper, materialWire)
     scene.add(cubeHelperMesh)
 
+    var gridHelper = new THREE.GridHelper(1000, 20, 0xff0000)
+    //scene.add(gridHelper)
 
 
-
+    //GROUPS AND CONTROLLERS
     ingenuityController = new THREE.Group()
     scene.add(ingenuityController)
     ingenuityController.rotation.y = 0.45
     ingenuityController.position.y = 50
     ingenuityController.add(cubeHelperMesh)
 
+    //LOADERS
 
-    const loader = new GLTFLoader()
-    loader.load( '../static/models/ingenuity.glb', function ( gltf ) {
+    const loaderGLTF = new GLTFLoader()
+    const loaderDRACO = new DRACOLoader()
+
+    //INGENUITY
+    loaderGLTF.load( '../static/models/ingenuity.glb', function ( gltf ) {
       var model = gltf.scene;
       model.scale.set(500, 500, 500)
       model.position.y = -50
@@ -76,13 +105,27 @@ if (WEBGL.isWebGLAvailable()) {
       console.error( error );
     } )
 
-    const ambientLight = new THREE.AmbientLight( 0xffffff, 10)
-    scene.add(ambientLight)
+    //TERRAIN
+    loaderGLTF.load( '../static/models/export1.glb', function ( gltf ) {
+      var terrain = gltf.scene;
+      terrain.scale.set(0.5, 0.5, 0.5)
+      terrain.rotation.x = THREE.Math.degToRad(-90)
+      terrain.rotation.z = THREE.Math.degToRad(180)
+      terrain.position.y = 100
+      //model.position.y = -50
+      var newMaterial = new THREE.MeshBasicMaterial({color: 0x774422, wireframe: false});
+      // var newMaterial = new THREE.MeshNormalMaterial();
+      terrain.traverse((o) => {
+        if (o.isMesh) o.material = newMaterial;
+      });
+      scene.add( terrain );
+    }, undefined, function ( error ) {
+      console.error( error );
+    } )
 
-    var gridHelper = new THREE.GridHelper(1000, 20, 0xff0000)
-    scene.add(gridHelper)
 
-    renderer = new THREE.WebGLRenderer({ antialias: true })
+    //RENDERER
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(window.devicePixelRatio)
     renderer.setSize(window.innerWidth, window.innerHeight)
     const container = document.getElementById( 'THREEContainer' )
@@ -155,17 +198,27 @@ if (WEBGL.isWebGLAvailable()) {
   }, 4000)
 }
 
+
+
   const updateCamera = () => {
     const maxRotation = 200
     gsap.to(camera.rotation, { duration: 7, ease: 'power1.out', y: mouse.x * maxRotation * 0.001 * -1 })
   }
+
+  const updateBG = () => {
+    debug1.innerHTML = window.innerHeight
+    debug2.innerHTML = window.innerHeight / 4
+  gsap.to("#bgImg", { duration: 7, ease: 'power1.out', backgroundPosition: `${(mouse.x * 200 * -1)}px -${window.innerHeight / 3.25}px` })
+  }
+
+
 
   const updateRotors = () => {
     if (rotor1.rotation.x > 360) rotor1.rotation.x = 0
     if (rotor2.rotation.x > 360) rotor2.rotation.x = 0
     rotor1.rotation.x += 0.3
     rotor2.rotation.x -= 0.4
-    debugArea.innerHTML = rotor1.rotation.x
+    //debugArea.innerHTML = rotor1.rotation.x
   }
 
 
@@ -174,12 +227,12 @@ if (WEBGL.isWebGLAvailable()) {
 
 
 
-
-
+  //POST-LOAD CONDITIONALS
 
   let startTakeOff = false
   let inFlight = false
 
+  //UPDATE
   const update = () => {
     if (modelReady && !startTakeOff) {
       setTimeout(() => {startTakeOff = true}, 1000)
@@ -189,22 +242,27 @@ if (WEBGL.isWebGLAvailable()) {
     }
 
     ingenuityController.position.y = hoverHeight.currentX()
+    
     if (modelReady) {
       updateRotors()
     }
     if (modelReady && inFlight) {
       updateCamera()
+      updateBG()
       updateHoverMouseRotation()
       updateHoverMousePosition()
     }
   }
 
+  //FIXED UPDATE
   //const fixedUpdate = () => {}
   //const fixedUpdateFrequency = 33.3 //33.3ms ~30FPS
   //window.setInterval(fixedUpdate, fixedUpdateFrequency)
 
+  //RENDER
   const render = () => renderer.render(scene, camera)
 
+  //RENDER LOOP
   const renderLoop = () => {
     statsFPS.begin()
     update()
