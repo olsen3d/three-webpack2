@@ -13,9 +13,6 @@ import gsap from 'gsap'
 
 //DEBUG
 
-
-console.log(DRACOLoader)
-
 const statsFPS = new Stats()
 statsFPS.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
 document.body.appendChild( statsFPS.dom )
@@ -46,7 +43,7 @@ if (WEBGL.isWebGLAvailable()) {
 
     //CAMERA
     camera = new THREE.PerspectiveCamera(
-      75,
+      65,
       window.innerWidth / window.innerHeight,
       1,
       50000
@@ -70,10 +67,24 @@ if (WEBGL.isWebGLAvailable()) {
     const cubeHelper = new THREE.BoxGeometry(150, 150, 150)
     const materialWire = new THREE.MeshBasicMaterial( {color: 0x00ff00, wireframe: true} )
     cubeHelperMesh = new THREE.Mesh(cubeHelper, materialWire)
-    scene.add(cubeHelperMesh)
+    //scene.add(cubeHelperMesh)
 
     var gridHelper = new THREE.GridHelper(1000, 20, 0xff0000)
     //scene.add(gridHelper)
+
+
+    //MATERIALS AND TEXTURES
+
+    const loaderTEXTURE = new THREE.TextureLoader();
+    const texture = loaderTEXTURE.load(
+      '../static/textures/bg5.jpg',
+      () => {
+        const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
+        rt.fromEquirectangularTexture(renderer, texture);
+        scene.background = rt;
+      });
+
+    const reflectMat = new THREE.MeshBasicMaterial({color: 0xeeeeee, envMap: texture })
 
 
     //GROUPS AND CONTROLLERS
@@ -86,7 +97,9 @@ if (WEBGL.isWebGLAvailable()) {
     //LOADERS
 
     const loaderGLTF = new GLTFLoader()
-    const loaderDRACO = new DRACOLoader()
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath( 'src/draco/' );
+    loaderGLTF.setDRACOLoader( dracoLoader );
 
     //INGENUITY
     loaderGLTF.load( '../static/models/ingenuity.glb', function ( gltf ) {
@@ -96,6 +109,7 @@ if (WEBGL.isWebGLAvailable()) {
       scene.add( model );
       ingenuityController.add(model)
       model.traverse((o) => {
+        if (o.isMesh) o.material = reflectMat;
         if (o.name === 'rotors_01') rotor1 = o
         if (o.name === 'rotors_02') rotor2 = o
       })
@@ -106,7 +120,8 @@ if (WEBGL.isWebGLAvailable()) {
     } )
 
     //TERRAIN
-    loaderGLTF.load( '../static/models/export1.glb', function ( gltf ) {
+    //export1.glb
+    loaderGLTF.load( '../static/models/terrainDraco.gltf', function ( gltf ) {
       var terrain = gltf.scene;
       terrain.scale.set(0.5, 0.5, 0.5)
       terrain.rotation.x = THREE.Math.degToRad(-90)
@@ -125,7 +140,7 @@ if (WEBGL.isWebGLAvailable()) {
 
 
     //RENDERER
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
     renderer.setPixelRatio(window.devicePixelRatio)
     renderer.setSize(window.innerWidth, window.innerHeight)
     const container = document.getElementById( 'THREEContainer' )
@@ -208,7 +223,7 @@ if (WEBGL.isWebGLAvailable()) {
   const updateBG = () => {
     debug1.innerHTML = window.innerHeight
     debug2.innerHTML = window.innerHeight / 4
-  gsap.to("#bgImg", { duration: 7, ease: 'power1.out', backgroundPosition: `${(mouse.x * 200 * -1)}px -${window.innerHeight / 3.25}px` })
+  gsap.to("#bgImg", { duration: 7, ease: 'power1.out', backgroundPosition: `${(mouse.x * 200 * -1)}px -${window.innerHeight / 2}px` })
   }
 
 
@@ -242,7 +257,7 @@ if (WEBGL.isWebGLAvailable()) {
     }
 
     ingenuityController.position.y = hoverHeight.currentX()
-    
+
     if (modelReady) {
       updateRotors()
     }
