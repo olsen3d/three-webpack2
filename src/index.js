@@ -9,7 +9,7 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
 import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader.js'
 import gsap from 'gsap'
 
-
+//testing123
 
 //DEBUG
 
@@ -32,9 +32,24 @@ if (WEBGL.isWebGLAvailable()) {
   let ingenuityController, cubeHelperMesh
   let rotor1, rotor2
 
+
   //PRE-LOAD CONDITIONALS
 
+  let isRendering = true
   let modelReady = false
+
+  //BUTTONS
+
+  const renderButton = document.querySelector('#renderButton')
+  renderButton.addEventListener('click', () => {
+    if (isRendering) {
+      isRendering = false
+
+    } else {
+      isRendering = true
+      renderLoop()
+    }
+  })
 
 
   //INITIALIZE THREE
@@ -56,8 +71,8 @@ if (WEBGL.isWebGLAvailable()) {
 
     //FOG
     {
-      const near = -5000;
-      const far = 30000;
+      const near = -8000;
+      const far = 20000;
       const color = 0xd4bfaf;
       scene.fog = new THREE.Fog(color, near, far);
       //scene.background = new THREE.Color(color);
@@ -92,7 +107,7 @@ if (WEBGL.isWebGLAvailable()) {
     scene.add(ingenuityController)
     ingenuityController.rotation.y = 0.45
     ingenuityController.position.y = 50
-    ingenuityController.add(cubeHelperMesh)
+    //ingenuityController.add(cubeHelperMesh)
 
     //LOADERS
 
@@ -142,18 +157,11 @@ if (WEBGL.isWebGLAvailable()) {
     //RENDERER
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
     renderer.setPixelRatio(window.devicePixelRatio)
-    renderer.setSize(window.innerWidth, window.innerHeight)
+    renderer.setSize(700, 600)
     const container = document.getElementById( 'THREEContainer' )
     container.appendChild(renderer.domElement)
 
-    window.addEventListener('resize', onWindowResize, false)
 
-  }
-
-  function onWindowResize() {
-    camera.aspect = 720 / 480
-    camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
   }
 
   const mouse = new THREE.Vector2()
@@ -178,22 +186,6 @@ if (WEBGL.isWebGLAvailable()) {
     }
   }
 
-  const maxHorizontalPosition = 1000
-  const updateHoverMousePosition = () => {
-    gsap.to(ingenuityController.position, { duration: 5, ease: 'power2.out', x: mouse.x * maxHorizontalPosition })
-    gsap.to(hoverHeight, { duration: 5, ease: 'power2.out', mouseAmount: mouse.y * hoverHeight.mouseMax })
-  }
-
-  const updateHoverMouseRotation = () => {
-    const distance = (mouse.x * maxHorizontalPosition) - ingenuityController.position.x
-    ingenuityController.rotation.z = THREE.Math.degToRad(distance / -40)
-  }
-
-  const takeOff = () => {
-    gsap.to(hoverHeight, { duration: 2, ease: 'power1.inOut', normal: hoverHeight.normalMax })
-    gsap.to(ingenuityController.rotation, { duration: 4, ease: 'back.inOut(4)', y: 0 })
-  }
-
   const hover = () => {
     let isUp = false
     let amount = (Math.random() * hoverHeight.hoverMax) + hoverHeight.hoverMin
@@ -216,14 +208,8 @@ if (WEBGL.isWebGLAvailable()) {
 
 
   const updateCamera = () => {
-    const maxRotation = 200
+    const maxRotation = 350
     gsap.to(camera.rotation, { duration: 7, ease: 'power1.out', y: mouse.x * maxRotation * 0.001 * -1 })
-  }
-
-  const updateBG = () => {
-    debug1.innerHTML = window.innerHeight
-    debug2.innerHTML = window.innerHeight / 4
-  gsap.to("#bgImg", { duration: 7, ease: 'power1.out', backgroundPosition: `${(mouse.x * 200 * -1)}px -${window.innerHeight / 2}px` })
   }
 
 
@@ -252,7 +238,6 @@ if (WEBGL.isWebGLAvailable()) {
     if (modelReady && !startTakeOff) {
       setTimeout(() => {startTakeOff = true}, 1000)
       setTimeout(() => {inFlight = true}, 2000)
-      takeOff()
       hover()
     }
 
@@ -263,9 +248,6 @@ if (WEBGL.isWebGLAvailable()) {
     }
     if (modelReady && inFlight) {
       updateCamera()
-      updateBG()
-      updateHoverMouseRotation()
-      updateHoverMousePosition()
     }
   }
 
@@ -279,11 +261,13 @@ if (WEBGL.isWebGLAvailable()) {
 
   //RENDER LOOP
   const renderLoop = () => {
-    statsFPS.begin()
-    update()
-    render()
-    statsFPS.end()
-    requestAnimationFrame( renderLoop )
+    if (isRendering) {
+      statsFPS.begin()
+      update()
+      render()
+      statsFPS.end()
+      requestAnimationFrame( renderLoop )
+    }
   }
 
   init()
