@@ -31,12 +31,23 @@ if (WEBGL.isWebGLAvailable()) {
   let camera, scene, renderer
   let ingenuityController, cubeHelperMesh
   let rotor1, rotor2
+  let canvasMouse = false
+
+  const canvas = document.querySelector('#THREEContainer')
+
+  canvas.addEventListener('mouseenter', () => {
+    canvasMouse = true
+  })
+  canvas.addEventListener('mouseleave', () => {
+    canvasMouse = false
+  })
 
 
   //PRE-LOAD CONDITIONALS
 
   let isRendering = true
   let modelReady = false
+  let isHovering = false
 
   //BUTTONS
 
@@ -55,16 +66,6 @@ if (WEBGL.isWebGLAvailable()) {
   //INITIALIZE THREE
 
   function init() {
-
-    //CAMERA
-    camera = new THREE.PerspectiveCamera(
-      65,
-      window.innerWidth / window.innerHeight,
-      1,
-      50000
-    )
-    camera.position.set(0, 350, 1000)
-    camera.lookAt(0, 350, 0)
 
     //SCENE
     scene = new THREE.Scene()
@@ -87,6 +88,22 @@ if (WEBGL.isWebGLAvailable()) {
     var gridHelper = new THREE.GridHelper(1000, 20, 0xff0000)
     //scene.add(gridHelper)
 
+        //GROUPS AND CONTROLLERS
+        ingenuityController = new THREE.Group()
+        scene.add(ingenuityController)
+        ingenuityController.position.y = 50
+        //ingenuityController.add(cubeHelperMesh)
+    
+        //CAMERA
+        camera = new THREE.PerspectiveCamera(
+          35,
+          700 / 600,
+          1,
+          50000
+        )
+        camera.position.set(250, 340, 500)
+        camera.lookAt(0, 300, 0)
+
 
     //MATERIALS AND TEXTURES
 
@@ -100,14 +117,6 @@ if (WEBGL.isWebGLAvailable()) {
       });
 
     const reflectMat = new THREE.MeshBasicMaterial({color: 0xeeeeee, envMap: texture })
-
-
-    //GROUPS AND CONTROLLERS
-    ingenuityController = new THREE.Group()
-    scene.add(ingenuityController)
-    ingenuityController.rotation.y = 0.45
-    ingenuityController.position.y = 50
-    //ingenuityController.add(cubeHelperMesh)
 
     //LOADERS
 
@@ -174,12 +183,12 @@ if (WEBGL.isWebGLAvailable()) {
 
 
   let hoverHeight = {
-    normal: 100,
+    normal: 200,
     normalMax: 300,
     hoverAmount: 0,
     mouseAmount: 0,
-    hoverMin: 10,
-    hoverMax: 25,
+    hoverMin: 2,
+    hoverMax: 8,
     mouseMax: 150,
     currentX: function() {
       return this.normal + this.hoverAmount + this.mouseAmount
@@ -187,6 +196,7 @@ if (WEBGL.isWebGLAvailable()) {
   }
 
   const hover = () => {
+    isHovering = true
     let isUp = false
     let amount = (Math.random() * hoverHeight.hoverMax) + hoverHeight.hoverMin
 
@@ -212,13 +222,25 @@ if (WEBGL.isWebGLAvailable()) {
     gsap.to(camera.rotation, { duration: 7, ease: 'power1.out', y: mouse.x * maxRotation * 0.001 * -1 })
   }
 
+  const cameraZoomIn = () => {
+    console.log('zoom')
+    camera.fov = 28
+  }
 
 
-  const updateRotors = () => {
+
+  const updateRotorsFast = () => {
     if (rotor1.rotation.x > 360) rotor1.rotation.x = 0
     if (rotor2.rotation.x > 360) rotor2.rotation.x = 0
     rotor1.rotation.x += 0.3
     rotor2.rotation.x -= 0.4
+    //debugArea.innerHTML = rotor1.rotation.x
+  }
+  const updateRotorsSlow = () => {
+    if (rotor1.rotation.x > 360) rotor1.rotation.x = 0
+    if (rotor2.rotation.x > 360) rotor2.rotation.x = 0
+    rotor1.rotation.x += 0.002
+    rotor2.rotation.x -= 0.003
     //debugArea.innerHTML = rotor1.rotation.x
   }
 
@@ -231,24 +253,22 @@ if (WEBGL.isWebGLAvailable()) {
   //POST-LOAD CONDITIONALS
 
   let startTakeOff = false
-  let inFlight = false
 
   //UPDATE
   const update = () => {
-    if (modelReady && !startTakeOff) {
-      setTimeout(() => {startTakeOff = true}, 1000)
-      setTimeout(() => {inFlight = true}, 2000)
-      hover()
-    }
-
-    ingenuityController.position.y = hoverHeight.currentX()
 
     if (modelReady) {
-      updateRotors()
+      if (!isHovering) hover()
+      ingenuityController.position.y = hoverHeight.currentX()
+      if (canvasMouse) {
+        updateRotorsSlow()
+        cameraZoomIn()
+      } else {
+        updateRotorsFast()
+      }
+      //updateCamera()
     }
-    if (modelReady && inFlight) {
-      updateCamera()
-    }
+
   }
 
   //FIXED UPDATE
