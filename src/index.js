@@ -21,6 +21,7 @@ const debug1 = document.querySelector('#debug1')
 const debug2 = document.querySelector('#debug2')
 
 
+const mouse = new THREE.Vector2()
 
 //MAIN
 
@@ -48,6 +49,7 @@ if (WEBGL.isWebGLAvailable()) {
   let isRendering = true
   let modelReady = false
   let isHovering = false
+  let zoomed = false
 
   //BUTTONS
 
@@ -91,12 +93,12 @@ if (WEBGL.isWebGLAvailable()) {
         //GROUPS AND CONTROLLERS
         ingenuityController = new THREE.Group()
         scene.add(ingenuityController)
-        ingenuityController.position.y = 50
+        ingenuityController.position.y = 220
         //ingenuityController.add(cubeHelperMesh)
     
         //CAMERA
         camera = new THREE.PerspectiveCamera(
-          35,
+          38,
           700 / 600,
           1,
           50000
@@ -171,49 +173,35 @@ if (WEBGL.isWebGLAvailable()) {
     container.appendChild(renderer.domElement)
 
 
-  }
-
-  const mouse = new THREE.Vector2()
-  function onDocumentMouseMove(event) {
-    event.preventDefault();
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  }
-  document.addEventListener('mousemove', onDocumentMouseMove, false);
-
-
-  let hoverHeight = {
-    normal: 200,
-    normalMax: 300,
-    hoverAmount: 0,
-    mouseAmount: 0,
-    hoverMin: 2,
-    hoverMax: 8,
-    mouseMax: 150,
-    currentX: function() {
-      return this.normal + this.hoverAmount + this.mouseAmount
+    const threeCanvas = renderer.domElement;
+    
+    function getCanvasRelativePosition(event) {
+      const rect = threeCanvas.getBoundingClientRect();
+      return {
+        x: (event.clientX - rect.left) * threeCanvas.width  / rect.width,
+        y: (event.clientY - rect.top ) * threeCanvas.height / rect.height,
+      };
     }
+    
+    function setPickPosition(event) {
+      const pos = getCanvasRelativePosition(event);
+      mouse.x = (pos.x / threeCanvas.width ) *  2 - 1;
+      mouse.y = (pos.y / threeCanvas.height) * -2 + 1;  // note we flip Y
+    }
+    
+    window.addEventListener('mousemove', setPickPosition);
+
   }
 
-  const hover = () => {
+
+
+  let hoverAnim
+
+  const startHover = () => {
     isHovering = true
-    let isUp = false
-    let amount = (Math.random() * hoverHeight.hoverMax) + hoverHeight.hoverMin
+    hoverAnim = gsap.to(ingenuityController.position, { duration: 4, ease: 'back.inOut(4)', y: 200, repeat: -1, yoyo: true })
+  }
 
-    const updateHoverVerticalPosition = (amount) => {
-      gsap.to(hoverHeight, { duration: 4, ease: 'back.inOut(4)', hoverAmount: amount })
-    }
-
-  window.setInterval(() => {
-    isUp = !isUp
-    if (isUp) {
-      amount = (Math.random() * hoverHeight.hoverMax) + hoverHeight.hoverMin
-    } else {
-      amount = -amount
-    }
-    updateHoverVerticalPosition(amount)
-  }, 4000)
-}
 
 
 
@@ -223,48 +211,59 @@ if (WEBGL.isWebGLAvailable()) {
   }
 
   const cameraZoomIn = () => {
-    console.log('zoom')
-    camera.fov = 28
+    zoomed = true
+    gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 28, onUpdate: () => camera.updateProjectionMatrix() })
   }
 
+  const cameraZoomOut = () => {
+    zoomed = false
+    gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 38, onUpdate: () => camera.updateProjectionMatrix() })
+  }
 
+  const rotors = {
+    multiplier: 1
+  }
 
-  const updateRotorsFast = () => {
+  const slowRotors = () => {
+    gsap.to(rotors, { duration: 0.5, ease: 'power1.out', multiplier: 0.01 })
+  }
+
+    const fastRotors = () => {
+    gsap.to(rotors, { duration: 0.5, ease: 'power1.out', multiplier: 1 })
+  }
+
+  const updateRotors = () => {
     if (rotor1.rotation.x > 360) rotor1.rotation.x = 0
     if (rotor2.rotation.x > 360) rotor2.rotation.x = 0
-    rotor1.rotation.x += 0.3
-    rotor2.rotation.x -= 0.4
-    //debugArea.innerHTML = rotor1.rotation.x
-  }
-  const updateRotorsSlow = () => {
-    if (rotor1.rotation.x > 360) rotor1.rotation.x = 0
-    if (rotor2.rotation.x > 360) rotor2.rotation.x = 0
-    rotor1.rotation.x += 0.002
-    rotor2.rotation.x -= 0.003
-    //debugArea.innerHTML = rotor1.rotation.x
+    rotor1.rotation.x += 0.3 * rotors.multiplier
+    rotor2.rotation.x -= 0.4 * rotors.multiplier
   }
 
-
-
-
-
-
-
-  //POST-LOAD CONDITIONALS
-
-  let startTakeOff = false
 
   //UPDATE
   const update = () => {
 
     if (modelReady) {
-      if (!isHovering) hover()
-      ingenuityController.position.y = hoverHeight.currentX()
+      if (!isHovering) startHover()
+      updateRotors()
+
       if (canvasMouse) {
-        updateRotorsSlow()
-        cameraZoomIn()
+        hoverAnim.pause()
+
+        camera.position.x = 250 + mouse.x * 50
+        camera.position.y = 340 + mouse.y * 50
+        camera.lookAt(0, 300, 0)
+        camera.updateProjectionMatrix()
+
+        if (!zoomed) {
+          cameraZoomIn()
+          slowRotors()
+        }
       } else {
-        updateRotorsFast()
+        hoverAnim.play()
+
+        if (zoomed) cameraZoomOut()
+        fastRotors()
       }
       //updateCamera()
     }
