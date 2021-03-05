@@ -75,7 +75,7 @@ if (WEBGL.isWebGLAvailable()) {
     //FOG
     {
       const near = -8000;
-      const far = 20000;
+      const far = 12000;
       const color = 0xd4bfaf;
       scene.fog = new THREE.Fog(color, near, far);
       //scene.background = new THREE.Color(color);
@@ -93,7 +93,7 @@ if (WEBGL.isWebGLAvailable()) {
         //GROUPS AND CONTROLLERS
         ingenuityController = new THREE.Group()
         scene.add(ingenuityController)
-        ingenuityController.position.y = 220
+        ingenuityController.position.y = 210
         //ingenuityController.add(cubeHelperMesh)
     
         //CAMERA
@@ -103,8 +103,8 @@ if (WEBGL.isWebGLAvailable()) {
           1,
           50000
         )
-        camera.position.set(250, 340, 500)
-        camera.lookAt(0, 300, 0)
+        camera.position.set(250, 440, 500)
+        camera.lookAt(0, 340, 0)
 
 
     //MATERIALS AND TEXTURES
@@ -118,6 +118,10 @@ if (WEBGL.isWebGLAvailable()) {
         scene.background = rt;
       });
 
+          const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITYbake.jpg')
+
+    const lightMat = new THREE.MeshBasicMaterial({map: textureINGENUITY})
+
     const reflectMat = new THREE.MeshBasicMaterial({color: 0xeeeeee, envMap: texture })
 
     //LOADERS
@@ -128,16 +132,33 @@ if (WEBGL.isWebGLAvailable()) {
     loaderGLTF.setDRACOLoader( dracoLoader );
 
     //INGENUITY
-    loaderGLTF.load( '../static/models/ingenuity.glb', function ( gltf ) {
+    // loaderGLTF.load( '../static/models/ingenuity.glb', function ( gltf ) {
+    //   var model = gltf.scene;
+    //   model.scale.set(500, 500, 500)
+    //   model.position.y = -50
+    //   scene.add( model );
+    //   ingenuityController.add(model)
+    //   model.traverse((o) => {
+    //     if (o.isMesh) o.material = reflectMat;
+    //     if (o.name === 'rotors_01') rotor1 = o
+    //     if (o.name === 'rotors_02') rotor2 = o
+    //   })
+
+    //   modelReady = true
+    // }, undefined, function ( error ) {
+    //   console.error( error );
+    // } )
+
+    loaderGLTF.load( '../static/models/ingDraco.gltf', function ( gltf ) {
       var model = gltf.scene;
-      model.scale.set(500, 500, 500)
+      model.scale.set(1.25, 1.25, 1.25)
       model.position.y = -50
       scene.add( model );
       ingenuityController.add(model)
       model.traverse((o) => {
-        if (o.isMesh) o.material = reflectMat;
-        if (o.name === 'rotors_01') rotor1 = o
-        if (o.name === 'rotors_02') rotor2 = o
+        if (o.isMesh) o.material = lightMat;
+        if (o.name === 'rotor1') rotor1 = o
+        if (o.name === 'rotor2') rotor2 = o
       })
 
       modelReady = true
@@ -212,7 +233,7 @@ if (WEBGL.isWebGLAvailable()) {
 
   const cameraZoomIn = () => {
     zoomed = true
-    gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 28, onUpdate: () => camera.updateProjectionMatrix() })
+    gsap.to(camera, { duration: 0.75, ease: 'power1.out', fov: 20, onUpdate: () => camera.updateProjectionMatrix() })
   }
 
   const cameraZoomOut = () => {
@@ -225,7 +246,7 @@ if (WEBGL.isWebGLAvailable()) {
   }
 
   const slowRotors = () => {
-    gsap.to(rotors, { duration: 0.5, ease: 'power1.out', multiplier: 0.01 })
+    gsap.to(rotors, { duration: 1.0, ease: 'power1.out', multiplier: 0.01 })
   }
 
     const fastRotors = () => {
@@ -233,10 +254,11 @@ if (WEBGL.isWebGLAvailable()) {
   }
 
   const updateRotors = () => {
-    if (rotor1.rotation.x > 360) rotor1.rotation.x = 0
-    if (rotor2.rotation.x > 360) rotor2.rotation.x = 0
-    rotor1.rotation.x += 0.3 * rotors.multiplier
-    rotor2.rotation.x -= 0.4 * rotors.multiplier
+    if (rotor1.rotation.y > 360) rotor1.rotation.y = 0
+    if (rotor2.rotation.y > 360) rotor2.rotation.y = 0
+    rotor1.rotation.y += 0.3 * rotors.multiplier //0.3
+    rotor2.rotation.y -= 0.4 * rotors.multiplier //0.4
+    //debugArea.innerHTML = rotor1.rotation.x
   }
 
 
@@ -250,9 +272,9 @@ if (WEBGL.isWebGLAvailable()) {
       if (canvasMouse) {
         hoverAnim.pause()
 
-        camera.position.x = 250 + mouse.x * 50
-        camera.position.y = 340 + mouse.y * 50
-        camera.lookAt(0, 300, 0)
+        camera.position.x = 250 + mouse.x * 70
+        camera.position.y = 440 + mouse.y * 170
+        camera.lookAt(0, 340, 0)
         camera.updateProjectionMatrix()
 
         if (!zoomed) {
