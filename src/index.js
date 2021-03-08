@@ -7,6 +7,11 @@ import { WEBGL } from './webgl'
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
 import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 import gsap from 'gsap'
 
 //testing123
@@ -23,13 +28,16 @@ const debug2 = document.querySelector('#debug2')
 
 const mouse = new THREE.Vector2()
 
+let outlinePass
+const raycaster = new THREE.Raycaster()
+
 //MAIN
 
 if (WEBGL.isWebGLAvailable()) {
 
   //VARIABLES
 
-  let camera, scene, renderer
+  let camera, scene, renderer, composer
   let ingenuityController, cubeHelperMesh
   let rotor1, rotor2
   let canvasMouse = false
@@ -74,10 +82,10 @@ if (WEBGL.isWebGLAvailable()) {
 
     //FOG
     {
-      const near = -8000;
-      const far = 12000;
-      const color = 0xd4bfaf;
-      scene.fog = new THREE.Fog(color, near, far);
+      const near = -2000;
+      const far = 22000;
+      const color = 0xfffdfc;
+      //scene.fog = new THREE.Fog(color, near, far);
       //scene.background = new THREE.Color(color);
     }
 
@@ -109,20 +117,33 @@ if (WEBGL.isWebGLAvailable()) {
 
     //MATERIALS AND TEXTURES
 
+    let hybridMat
+    let rt
     const loaderTEXTURE = new THREE.TextureLoader();
     const texture = loaderTEXTURE.load(
       '../static/textures/bg5.jpg',
       () => {
-        const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
+        rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
         rt.fromEquirectangularTexture(renderer, texture);
+        hybridMat.envMap = rt
         scene.background = rt;
       });
 
-          const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITYbake.jpg')
+          // const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITYbake.jpg')
+          const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITYbake4k.jpg')
 
     const lightMat = new THREE.MeshBasicMaterial({map: textureINGENUITY})
 
     const reflectMat = new THREE.MeshBasicMaterial({color: 0xeeeeee, envMap: texture })
+
+    hybridMat = new THREE.MeshBasicMaterial({
+      color: 0xeeeeee,
+      map: textureINGENUITY,
+      specularMap: textureINGENUITY,
+      reflectivity: 1,
+      //envMap: texture,
+      combine: THREE.AddOperation
+    })
 
     //LOADERS
 
@@ -156,7 +177,7 @@ if (WEBGL.isWebGLAvailable()) {
       scene.add( model );
       ingenuityController.add(model)
       model.traverse((o) => {
-        if (o.isMesh) o.material = lightMat;
+        if (o.isMesh) o.material = hybridMat;
         if (o.name === 'rotor1') rotor1 = o
         if (o.name === 'rotor2') rotor2 = o
       })
@@ -195,6 +216,18 @@ if (WEBGL.isWebGLAvailable()) {
 
 
     const threeCanvas = renderer.domElement;
+
+
+    //POST
+    composer = new EffectComposer(renderer)
+    const renderPass = new RenderPass(scene, camera)
+    composer.addPass(renderPass)
+    outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+    composer.addPass(outlinePass)
+
+    const pass = new SMAAPass( window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio() );
+		composer.addPass( pass );
+
     
     function getCanvasRelativePosition(event) {
       const rect = threeCanvas.getBoundingClientRect();
@@ -208,9 +241,25 @@ if (WEBGL.isWebGLAvailable()) {
       const pos = getCanvasRelativePosition(event);
       mouse.x = (pos.x / threeCanvas.width ) *  2 - 1;
       mouse.y = (pos.y / threeCanvas.height) * -2 + 1;  // note we flip Y
+
+      //checkIntersection()
+    }
+
+    function checkIntersection() {
+      raycaster.setFromCamera( mouse, camera )
+
+      const intersects = raycaster.intersectObject( scene, true )
+
+      if ( intersects.length > 0 ) {
+        const selectedObject = intersects[ 0 ].object;
+        outlinePass.selectedObjects = [selectedObject];
+      } else {
+        outlinePass.selectedObjects = [];
+      }
     }
     
-    window.addEventListener('mousemove', setPickPosition);
+    window.addEventListener('pointermove', setPickPosition);
+    window.setInterval(checkIntersection, 500)
 
   }
 
@@ -223,14 +272,6 @@ if (WEBGL.isWebGLAvailable()) {
     hoverAnim = gsap.to(ingenuityController.position, { duration: 4, ease: 'back.inOut(4)', y: 200, repeat: -1, yoyo: true })
   }
 
-
-
-
-  const updateCamera = () => {
-    const maxRotation = 350
-    gsap.to(camera.rotation, { duration: 7, ease: 'power1.out', y: mouse.x * maxRotation * 0.001 * -1 })
-  }
-
   const cameraZoomIn = () => {
     zoomed = true
     gsap.to(camera, { duration: 0.75, ease: 'power1.out', fov: 20, onUpdate: () => camera.updateProjectionMatrix() })
@@ -241,17 +282,9 @@ if (WEBGL.isWebGLAvailable()) {
     gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 38, onUpdate: () => camera.updateProjectionMatrix() })
   }
 
-  const rotors = {
-    multiplier: 1
-  }
-
-  const slowRotors = () => {
-    gsap.to(rotors, { duration: 1.0, ease: 'power1.out', multiplier: 0.01 })
-  }
-
-    const fastRotors = () => {
-    gsap.to(rotors, { duration: 0.5, ease: 'power1.out', multiplier: 1 })
-  }
+  const rotors = {multiplier: 1}
+  const slowRotors = () => {gsap.to(rotors, { duration: 1.0, ease: 'power4.out', multiplier: 0.01 })}
+  const fastRotors = () => {gsap.to(rotors, { duration: 1, ease: 'power4.out', multiplier: 1 })}
 
   const updateRotors = () => {
     if (rotor1.rotation.y > 360) rotor1.rotation.y = 0
@@ -266,6 +299,7 @@ if (WEBGL.isWebGLAvailable()) {
   const update = () => {
 
     if (modelReady) {
+      //outlinePass.selectedObjects = [rotor2]
       if (!isHovering) startHover()
       updateRotors()
 
@@ -298,7 +332,7 @@ if (WEBGL.isWebGLAvailable()) {
   //window.setInterval(fixedUpdate, fixedUpdateFrequency)
 
   //RENDER
-  const render = () => renderer.render(scene, camera)
+  const render = () => composer.render(scene, camera)
 
   //RENDER LOOP
   const renderLoop = () => {
