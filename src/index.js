@@ -39,7 +39,7 @@ if (WEBGL.isWebGLAvailable()) {
 
   let camera, scene, renderer, composer
   let ingenuityController, cubeHelperMesh
-  let rotor1, rotor2
+  let rotor1, rotor2, rotor1Base, rotor2Base
   let canvasMouse = false
 
   const canvas = document.querySelector('#THREEContainer')
@@ -106,7 +106,7 @@ if (WEBGL.isWebGLAvailable()) {
     
         //CAMERA
         camera = new THREE.PerspectiveCamera(
-          38,
+          42,
           700 / 600,
           1,
           50000
@@ -130,7 +130,7 @@ if (WEBGL.isWebGLAvailable()) {
       });
 
           // const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITYbake.jpg')
-          const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITYbake4k.jpg')
+          const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITY_TEXTURE_BAKED_01.jpg')
 
     const lightMat = new THREE.MeshBasicMaterial({map: textureINGENUITY})
 
@@ -170,7 +170,7 @@ if (WEBGL.isWebGLAvailable()) {
     //   console.error( error );
     // } )
 
-    loaderGLTF.load( '../static/models/ingDraco.gltf', function ( gltf ) {
+    loaderGLTF.load( '../static/models/ingDraco02.gltf', function ( gltf ) {
       var model = gltf.scene;
       model.scale.set(1.25, 1.25, 1.25)
       model.position.y = -50
@@ -179,7 +179,10 @@ if (WEBGL.isWebGLAvailable()) {
       model.traverse((o) => {
         if (o.isMesh) o.material = hybridMat;
         if (o.name === 'rotor1') rotor1 = o
+        if (o.name === 'rotor1Base') rotor1Base = o
         if (o.name === 'rotor2') rotor2 = o
+        if (o.name === 'rotor2Base') rotor2Base = o
+        console.log(o.name)
       })
 
       modelReady = true
@@ -245,6 +248,16 @@ if (WEBGL.isWebGLAvailable()) {
       //checkIntersection()
     }
 
+    /*
+    TerrainMesh
+    body
+    solarPanel
+    rotor1
+    rotor1Base
+    legs
+
+    */
+    // eslint-disable-next-line complexity
     function checkIntersection() {
       raycaster.setFromCamera( mouse, camera )
 
@@ -252,7 +265,32 @@ if (WEBGL.isWebGLAvailable()) {
 
       if ( intersects.length > 0 ) {
         const selectedObject = intersects[ 0 ].object;
-        outlinePass.selectedObjects = [selectedObject];
+        switch (selectedObject.name) {
+          case 'TerrainMesh':
+            outlinePass.selectedObjects = []
+            break
+          case 'body':
+            outlinePass.selectedObjects = [selectedObject]
+            break
+          case 'legs':
+            outlinePass.selectedObjects = [selectedObject]
+            break
+          case 'rotor1':
+            outlinePass.selectedObjects = [rotor1, rotor1Base]
+            break
+          case 'rotor1Base':
+            outlinePass.selectedObjects = [rotor1, rotor1Base]
+            break
+          case 'rotor2':
+            outlinePass.selectedObjects = [rotor2, rotor2Base]
+            break
+          case 'rotor2Base':
+            outlinePass.selectedObjects = [rotor2, rotor2Base]
+            break
+          default:
+            outlinePass.selectedObjects = []
+        }
+        // outlinePass.selectedObjects = [selectedObject];
       } else {
         outlinePass.selectedObjects = [];
       }
@@ -274,12 +312,12 @@ if (WEBGL.isWebGLAvailable()) {
 
   const cameraZoomIn = () => {
     zoomed = true
-    gsap.to(camera, { duration: 0.75, ease: 'power1.out', fov: 20, onUpdate: () => camera.updateProjectionMatrix() })
+    gsap.to(camera, { duration: 0.75, ease: 'power1.out', fov: 24, onUpdate: () => camera.updateProjectionMatrix() })
   }
 
   const cameraZoomOut = () => {
     zoomed = false
-    gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 38, onUpdate: () => camera.updateProjectionMatrix() })
+    gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 42, onUpdate: () => camera.updateProjectionMatrix() })
   }
 
   const rotors = {multiplier: 1}
