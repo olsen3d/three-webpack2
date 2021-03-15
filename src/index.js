@@ -41,6 +41,8 @@ if (WEBGL.isWebGLAvailable()) {
   let ingenuityController, cubeHelperMesh
   let rotor1, rotor2, rotor1Base, rotor2Base
   let canvasMouse = false
+  let terrainMat
+  const ingenuityMeshes = []
 
   const canvas = document.querySelector('#THREEContainer')
 
@@ -82,11 +84,10 @@ if (WEBGL.isWebGLAvailable()) {
 
     //FOG
     {
-      const near = -2000;
-      const far = 22000;
-      const color = 0xfffdfc;
-      //scene.fog = new THREE.Fog(color, near, far);
-      //scene.background = new THREE.Color(color);
+      const near = -10000;
+      const far = 50000;
+      const color = 0xd9c6bb;
+      scene.fog = new THREE.Fog(color, near, far);
     }
 
     //DEBUG MODELS AND HELPERS
@@ -117,11 +118,11 @@ if (WEBGL.isWebGLAvailable()) {
 
     //MATERIALS AND TEXTURES
 
-    let hybridMat
+    let hybridMat, xRayMat
     let rt
     const loaderTEXTURE = new THREE.TextureLoader();
     const texture = loaderTEXTURE.load(
-      '../static/textures/bg5.jpg',
+      '../static/textures/bg9.jpg',
       () => {
         rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
         rt.fromEquirectangularTexture(renderer, texture);
@@ -129,12 +130,9 @@ if (WEBGL.isWebGLAvailable()) {
         scene.background = rt;
       });
 
-          // const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITYbake.jpg')
-          const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITY_TEXTURE_BAKED_01.jpg')
+    const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITY_TEXTURE_BAKED_01.jpg')
+    const textureROCKS = loaderTEXTURE.load('../static/textures/TERRAIN_TEXTURE_03.jpg')
 
-    const lightMat = new THREE.MeshBasicMaterial({map: textureINGENUITY})
-
-    const reflectMat = new THREE.MeshBasicMaterial({color: 0xeeeeee, envMap: texture })
 
     hybridMat = new THREE.MeshBasicMaterial({
       color: 0xeeeeee,
@@ -142,7 +140,21 @@ if (WEBGL.isWebGLAvailable()) {
       specularMap: textureINGENUITY,
       reflectivity: 1,
       //envMap: texture,
-      combine: THREE.AddOperation
+      combine: THREE.AddOperation,
+      fog: false
+    })
+
+    xRayMat = new THREE.MeshBasicMaterial({
+      color: 0xeeeeee,
+      map: textureINGENUITY,
+      transparent: true,
+      opacity: 0.5,
+      fog: false
+    })
+
+    terrainMat = new THREE.MeshBasicMaterial({
+      map: textureROCKS,
+      fog: true
     })
 
     //LOADERS
@@ -153,22 +165,6 @@ if (WEBGL.isWebGLAvailable()) {
     loaderGLTF.setDRACOLoader( dracoLoader );
 
     //INGENUITY
-    // loaderGLTF.load( '../static/models/ingenuity.glb', function ( gltf ) {
-    //   var model = gltf.scene;
-    //   model.scale.set(500, 500, 500)
-    //   model.position.y = -50
-    //   scene.add( model );
-    //   ingenuityController.add(model)
-    //   model.traverse((o) => {
-    //     if (o.isMesh) o.material = reflectMat;
-    //     if (o.name === 'rotors_01') rotor1 = o
-    //     if (o.name === 'rotors_02') rotor2 = o
-    //   })
-
-    //   modelReady = true
-    // }, undefined, function ( error ) {
-    //   console.error( error );
-    // } )
 
     loaderGLTF.load( '../static/models/ingDraco02.gltf', function ( gltf ) {
       var model = gltf.scene;
@@ -177,12 +173,14 @@ if (WEBGL.isWebGLAvailable()) {
       scene.add( model );
       ingenuityController.add(model)
       model.traverse((o) => {
-        if (o.isMesh) o.material = hybridMat;
+        if (o.isMesh) {
+          o.material = hybridMat
+          ingenuityMeshes.push(o)
+        }
         if (o.name === 'rotor1') rotor1 = o
         if (o.name === 'rotor1Base') rotor1Base = o
         if (o.name === 'rotor2') rotor2 = o
         if (o.name === 'rotor2Base') rotor2Base = o
-        console.log(o.name)
       })
 
       modelReady = true
@@ -192,17 +190,14 @@ if (WEBGL.isWebGLAvailable()) {
 
     //TERRAIN
     //export1.glb
-    loaderGLTF.load( '../static/models/terrainDraco.gltf', function ( gltf ) {
+    loaderGLTF.load( '../static/models/terrainDraco2.gltf', function ( gltf ) {
       var terrain = gltf.scene;
-      terrain.scale.set(0.5, 0.5, 0.5)
-      terrain.rotation.x = THREE.Math.degToRad(-90)
-      terrain.rotation.z = THREE.Math.degToRad(180)
-      terrain.position.y = 100
-      //model.position.y = -50
-      var newMaterial = new THREE.MeshBasicMaterial({color: 0x774422, wireframe: false});
-      // var newMaterial = new THREE.MeshNormalMaterial();
+      terrain.scale.set(1.5, 1.5, 1.5)
+      terrain.position.y = -100
+      terrain.position.x = -2500
+      terrain.position.z = -300
       terrain.traverse((o) => {
-        if (o.isMesh) o.material = newMaterial;
+        if (o.isMesh) o.material = terrainMat;
       });
       scene.add( terrain );
     }, undefined, function ( error ) {
@@ -255,8 +250,8 @@ if (WEBGL.isWebGLAvailable()) {
     rotor1
     rotor1Base
     legs
-
     */
+
     // eslint-disable-next-line complexity
     function checkIntersection() {
       raycaster.setFromCamera( mouse, camera )
@@ -265,32 +260,30 @@ if (WEBGL.isWebGLAvailable()) {
 
       if ( intersects.length > 0 ) {
         const selectedObject = intersects[ 0 ].object;
+        let otherMeshes = []
+        let rotorGroup = [rotor1, rotor1Base, rotor2, rotor2Base]
         switch (selectedObject.name) {
-          case 'TerrainMesh':
-            outlinePass.selectedObjects = []
-            break
           case 'body':
-            outlinePass.selectedObjects = [selectedObject]
-            break
+          case 'solarPanel':
           case 'legs':
             outlinePass.selectedObjects = [selectedObject]
+            selectedObject.material = hybridMat
+            otherMeshes = ingenuityMeshes.filter(mesh => mesh.name !== selectedObject.name)
+            otherMeshes.forEach(mesh => {mesh.material = xRayMat})
             break
           case 'rotor1':
-            outlinePass.selectedObjects = [rotor1, rotor1Base]
-            break
           case 'rotor1Base':
-            outlinePass.selectedObjects = [rotor1, rotor1Base]
-            break
           case 'rotor2':
-            outlinePass.selectedObjects = [rotor2, rotor2Base]
-            break
           case 'rotor2Base':
-            outlinePass.selectedObjects = [rotor2, rotor2Base]
+            outlinePass.selectedObjects = [...rotorGroup]
+            rotorGroup.forEach(mesh => {mesh.material = hybridMat})
+            otherMeshes = ingenuityMeshes.filter(mesh => !rotorGroup.includes(mesh))
+            otherMeshes.forEach(mesh => {mesh.material = xRayMat})
             break
           default:
             outlinePass.selectedObjects = []
+            ingenuityMeshes.forEach(mesh => {mesh.material = hybridMat})
         }
-        // outlinePass.selectedObjects = [selectedObject];
       } else {
         outlinePass.selectedObjects = [];
       }
@@ -310,14 +303,28 @@ if (WEBGL.isWebGLAvailable()) {
     hoverAnim = gsap.to(ingenuityController.position, { duration: 4, ease: 'back.inOut(4)', y: 200, repeat: -1, yoyo: true })
   }
 
+  //camera.position.set(250, 440, 500)
+
+  const alignCamera = () => {
+    camera.lookAt(0, 340, 0)
+    camera.updateProjectionMatrix()
+  }
+
   const cameraZoomIn = () => {
     zoomed = true
-    gsap.to(camera, { duration: 0.75, ease: 'power1.out', fov: 24, onUpdate: () => camera.updateProjectionMatrix() })
+    gsap.to(camera, { duration: 0.75, ease: 'power1.out', fov: 24, onUpdate: () => alignCamera() })
   }
 
   const cameraZoomOut = () => {
     zoomed = false
-    gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 42, onUpdate: () => camera.updateProjectionMatrix() })
+    gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 42, onUpdate: () => alignCamera() })
+    gsap.to(camera.position, { duration: 1.5, ease: 'power1.out', x: 250, onUpdate: () => alignCamera() })
+    gsap.to(camera.position, { duration: 1.5, ease: 'power1.out', y: 440, onUpdate: () => alignCamera() })
+  }
+
+  const updateCamera = () => {
+    gsap.to(camera.position, { duration: 1.5, ease: 'power1.out', x: 250 + mouse.x * 100, onUpdate: () => alignCamera() })
+    gsap.to(camera.position, { duration: 1.5, ease: 'power1.out', y: 440 + mouse.y * 220, onUpdate: () => alignCamera() })
   }
 
   const rotors = {multiplier: 1}
@@ -337,17 +344,17 @@ if (WEBGL.isWebGLAvailable()) {
   const update = () => {
 
     if (modelReady) {
-      //outlinePass.selectedObjects = [rotor2]
       if (!isHovering) startHover()
       updateRotors()
 
       if (canvasMouse) {
         hoverAnim.pause()
 
-        camera.position.x = 250 + mouse.x * 70
-        camera.position.y = 440 + mouse.y * 170
-        camera.lookAt(0, 340, 0)
-        camera.updateProjectionMatrix()
+        // camera.position.x = 250 + mouse.x * 70
+        // camera.position.y = 440 + mouse.y * 170
+        updateCamera()
+        // camera.lookAt(0, 340, 0)
+        // camera.updateProjectionMatrix()
 
         if (!zoomed) {
           cameraZoomIn()
