@@ -16,6 +16,7 @@ body {
   font-size: 1.3rem;
   font-weight: normal;
   background-color: #333333;
+  box-sizing: border-box;
 }
 
 code {
@@ -122,7 +123,6 @@ p {
 #bgImg {
   height: 100vh;
   width: 100vw;
-  /* background-image: url('../textures/bg3.jpg'); */
   background-size:100%;
 }
 
@@ -130,6 +130,14 @@ p {
   position:absolute;
   top: 300px;
   left: 200px;
+  padding: 0;
+  border-radius: 1.5rem;
+  border: solid lightgray 4px;
+  overflow: hidden;
+}
+#THREEWindow {
+  width: 700px;
+  height: 600px;
 }
 
 #debugPane {

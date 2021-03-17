@@ -84,10 +84,11 @@ if (WEBGL.isWebGLAvailable()) {
 
     //FOG
     {
-      const near = -10000;
-      const far = 50000;
-      const color = 0xd9c6bb;
+      const near = -15000;
+      const far = 40000;
+      const color = 0xeed4b6;
       scene.fog = new THREE.Fog(color, near, far);
+      scene.background = new THREE.Color( color )
     }
 
     //DEBUG MODELS AND HELPERS
@@ -127,7 +128,7 @@ if (WEBGL.isWebGLAvailable()) {
         rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
         rt.fromEquirectangularTexture(renderer, texture);
         hybridMat.envMap = rt
-        scene.background = rt;
+        // scene.background = rt;
       });
 
     const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITY_TEXTURE_BAKED_01.jpg')
@@ -209,7 +210,7 @@ if (WEBGL.isWebGLAvailable()) {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
     renderer.setPixelRatio(window.devicePixelRatio)
     renderer.setSize(700, 600)
-    const container = document.getElementById( 'THREEContainer' )
+    const container = document.getElementById( 'THREEWindow' )
     container.appendChild(renderer.domElement)
 
 
