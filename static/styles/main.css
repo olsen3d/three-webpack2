@@ -1,13 +1,13 @@
 @import "https://fonts.googleapis.com/icon?family=Material+Icons";
 
 @font-face {
-  font-family: 'subheader'; 
-  src: url('../fonts/Changa-ExtraLight.ttf'); 
+  font-family: 'copy'; 
+  src: url('../fonts/Roboto-Light.ttf'); 
 }
 
 @font-face {
   font-family: 'header'; 
-  src: url('../fonts/JosefinSans-Medium.ttf'); 
+  src: url('../fonts/LEMONMILK-Medium.otf'); 
 }
 
 body { 
@@ -15,7 +15,7 @@ body {
   margin: 0; 
   font-size: 1.3rem;
   font-weight: normal;
-  background-color: #333333;
+  background-color: #222222;
   box-sizing: border-box;
 }
 
@@ -126,22 +126,76 @@ p {
   background-size:100%;
 }
 
+.sectionContainer {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  padding: 0 10%;
+  align-items: center;
+}
+
+#inspectContainer {
+  background-color: #222;
+  display: flex;
+  flex-direction: row;
+}
+
 #THREEContainer {
-  position:absolute;
-  top: 300px;
-  left: 200px;
+  z-index: 99;
   padding: 0;
   border-radius: 1.5rem;
-  border: solid lightgray 4px;
+  border: solid #222 4px;
   overflow: hidden;
 }
 #THREEWindow {
-  width: 700px;
-  height: 600px;
+  width: 600px;
+  height: 500px;
 }
 
 #debugPane {
   position: fixed;
   top: 100px;
   left: 10px;
+}
+
+#inspectTextArea {
+  width: 40vw;
+  padding: 0 1rem;
+}
+
+H3 {
+  font-family: header;
+  color: white;
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.inspectCopy {
+  padding: 0 1rem;
+  font-family: copy;
+  color: #eeeeee;
+  font-size: 0.8rem;
+  border-left: solid #eeeeee 3px;
+  word-break: break-word;
+  overflow: hidden;
+}
+
+.inspectCard {
+  width: 40vw;
+  position: absolute;
+  opacity: 0;
+  transform: translateX(-100px);
+  transition: opacity 400ms, transform 400ms;
+}
+
+.inspectHidden {
+  opacity: 0;
+  transform: translateX(-100px);
+}
+
+.inspectVisible {
+  opacity: 1;
+  transform: translateX(0px);
+  transition: opacity 900ms, transform 900ms;
 }

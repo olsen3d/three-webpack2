@@ -18,14 +18,6 @@ import gsap from 'gsap'
 
 //DEBUG
 
-const statsFPS = new Stats()
-statsFPS.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
-document.body.appendChild( statsFPS.dom )
-
-const debug1 = document.querySelector('#debug1')
-const debug2 = document.querySelector('#debug2')
-
-
 const mouse = new THREE.Vector2()
 
 let outlinePass
@@ -63,17 +55,6 @@ if (WEBGL.isWebGLAvailable()) {
 
   //BUTTONS
 
-  const renderButton = document.querySelector('#renderButton')
-  renderButton.addEventListener('click', () => {
-    if (isRendering) {
-      isRendering = false
-
-    } else {
-      isRendering = true
-      renderLoop()
-    }
-  })
-
 
   //INITIALIZE THREE
 
@@ -84,9 +65,9 @@ if (WEBGL.isWebGLAvailable()) {
 
     //FOG
     {
-      const near = -15000;
-      const far = 40000;
-      const color = 0xeed4b6;
+      const near = -5000;
+      const far = 45000;
+      const color = 0xf8f4f0;
       scene.fog = new THREE.Fog(color, near, far);
       scene.background = new THREE.Color( color )
     }
@@ -113,7 +94,7 @@ if (WEBGL.isWebGLAvailable()) {
           1,
           50000
         )
-        camera.position.set(250, 440, 500)
+        camera.position.set(250, 340, 500)
         camera.lookAt(0, 340, 0)
 
 
@@ -123,7 +104,7 @@ if (WEBGL.isWebGLAvailable()) {
     let rt
     const loaderTEXTURE = new THREE.TextureLoader();
     const texture = loaderTEXTURE.load(
-      '../static/textures/bg9.jpg',
+      '../static/textures/bgInspect.jpg',
       () => {
         rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
         rt.fromEquirectangularTexture(renderer, texture);
@@ -209,7 +190,7 @@ if (WEBGL.isWebGLAvailable()) {
     //RENDERER
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
     renderer.setPixelRatio(window.devicePixelRatio)
-    renderer.setSize(700, 600)
+    renderer.setSize(600, 500)
     const container = document.getElementById( 'THREEWindow' )
     container.appendChild(renderer.domElement)
 
@@ -253,6 +234,9 @@ if (WEBGL.isWebGLAvailable()) {
     legs
     */
 
+    const solarPanelCard = document.querySelector('#solarPanel')
+    const rotorsCard = document.querySelector('#rotors')
+
     // eslint-disable-next-line complexity
     function checkIntersection() {
       raycaster.setFromCamera( mouse, camera )
@@ -271,6 +255,8 @@ if (WEBGL.isWebGLAvailable()) {
             selectedObject.material = hybridMat
             otherMeshes = ingenuityMeshes.filter(mesh => mesh.name !== selectedObject.name)
             otherMeshes.forEach(mesh => {mesh.material = xRayMat})
+            solarPanelCard.classList.add('inspectVisible')
+            rotorsCard.classList.remove('inspectVisible')
             break
           case 'rotor1':
           case 'rotor1Base':
@@ -280,8 +266,12 @@ if (WEBGL.isWebGLAvailable()) {
             rotorGroup.forEach(mesh => {mesh.material = hybridMat})
             otherMeshes = ingenuityMeshes.filter(mesh => !rotorGroup.includes(mesh))
             otherMeshes.forEach(mesh => {mesh.material = xRayMat})
+            solarPanelCard.classList.remove('inspectVisible')
+            rotorsCard.classList.add('inspectVisible')
             break
           default:
+            solarPanelCard.classList.remove('inspectVisible')
+            rotorsCard.classList.remove('inspectVisible')
             outlinePass.selectedObjects = []
             ingenuityMeshes.forEach(mesh => {mesh.material = hybridMat})
         }
@@ -289,7 +279,6 @@ if (WEBGL.isWebGLAvailable()) {
         outlinePass.selectedObjects = [];
       }
     }
-    
     window.addEventListener('pointermove', setPickPosition);
     window.setInterval(checkIntersection, 500)
 
@@ -383,10 +372,8 @@ if (WEBGL.isWebGLAvailable()) {
   //RENDER LOOP
   const renderLoop = () => {
     if (isRendering) {
-      statsFPS.begin()
       update()
       render()
-      statsFPS.end()
       requestAnimationFrame( renderLoop )
     }
   }
