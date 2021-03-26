@@ -146,6 +146,8 @@ p {
   border-radius: 1.5rem;
   border: solid #222 4px;
   overflow: hidden;
+  /* cursor: none; */
+  cursor: url('../textures/inspectorCursor32.png') 16 16, auto;
 }
 #THREEWindow {
   width: 600px;

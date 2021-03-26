@@ -23,6 +23,8 @@ const mouse = new THREE.Vector2()
 let outlinePass
 const raycaster = new THREE.Raycaster()
 
+const video = document.getElementById('video')
+
 //MAIN
 
 if (WEBGL.isWebGLAvailable()) {
@@ -31,7 +33,7 @@ if (WEBGL.isWebGLAvailable()) {
 
   let camera, scene, renderer, composer
   let ingenuityController, cubeHelperMesh
-  let rotor1, rotor2, rotor1Base, rotor2Base
+  let rotor1, rotor2, rotor1Base, rotor2Base, dustMesh, dustMesh2
   let canvasMouse = false
   let terrainMat
   const ingenuityMeshes = []
@@ -65,8 +67,8 @@ if (WEBGL.isWebGLAvailable()) {
 
     //FOG
     {
-      const near = -5000;
-      const far = 45000;
+      const near = 2000;
+      const far = 40000;
       const color = 0xf8f4f0;
       scene.fog = new THREE.Fog(color, near, far);
       scene.background = new THREE.Color( color )
@@ -89,7 +91,7 @@ if (WEBGL.isWebGLAvailable()) {
     
         //CAMERA
         camera = new THREE.PerspectiveCamera(
-          42,
+          46, //42
           700 / 600,
           1,
           50000
@@ -117,7 +119,7 @@ if (WEBGL.isWebGLAvailable()) {
 
 
     hybridMat = new THREE.MeshBasicMaterial({
-      color: 0xeeeeee,
+      color: 0xffffff,
       map: textureINGENUITY,
       specularMap: textureINGENUITY,
       reflectivity: 1,
@@ -127,17 +129,50 @@ if (WEBGL.isWebGLAvailable()) {
     })
 
     xRayMat = new THREE.MeshBasicMaterial({
-      color: 0xeeeeee,
+      color: 0xffffff,
       map: textureINGENUITY,
       transparent: true,
-      opacity: 0.5,
-      fog: false
+      opacity: 0.4,
+      fog: true
     })
 
     terrainMat = new THREE.MeshBasicMaterial({
       map: textureROCKS,
       fog: true
     })
+
+    const textureDust = loaderTEXTURE.load('../static/textures/dust.jpg')
+
+    video.play()
+    const videoTexture = new THREE.VideoTexture(video);
+    const videoMaterial =  new THREE.MeshBasicMaterial(
+      {
+        map: textureDust,
+        alphaMap: videoTexture,
+        opacity: 1,
+        transparent: true,
+        fog: false,
+        // depthWrite: false,
+        // depthTest: false
+      } );
+
+    const testPlane = new THREE.PlaneGeometry(600, 250, 0)
+    const testPlane2 = new THREE.PlaneGeometry(1000, 400, 0)
+    const testMat = new THREE.MeshNormalMaterial()
+    dustMesh = new THREE.Mesh(testPlane, videoMaterial)
+    dustMesh.position.y = 270
+    dustMesh.position.x = 225
+    dustMesh.position.z = 170
+    dustMesh.rotation.y = THREE.Math.degToRad(25)
+    scene.add(dustMesh)
+
+    dustMesh2 = new THREE.Mesh(testPlane2, videoMaterial)
+    dustMesh2.position.y = 260
+    dustMesh2.position.x = -105
+    dustMesh2.position.z = -170
+    dustMesh2.rotation.y = THREE.Math.degToRad(25)
+    scene.add(dustMesh2)
+
 
     //LOADERS
 
@@ -169,6 +204,7 @@ if (WEBGL.isWebGLAvailable()) {
     }, undefined, function ( error ) {
       console.error( error );
     } )
+
 
     //TERRAIN
     //export1.glb
@@ -245,7 +281,9 @@ if (WEBGL.isWebGLAvailable()) {
       const intersects = raycaster.intersectObject( scene, true )
 
       if ( intersects.length > 0 ) {
-        const selectedObject = intersects[ 0 ].object;
+        let selectedObject = intersects[ 0 ].object;
+        if (!selectedObject.name) selectedObject = intersects[ 1 ].object
+        // console.log('first:', intersects[ 0 ].object.name, 'second:', intersects[ 1 ].object.name)
         let otherMeshes = []
         let rotorGroup = [rotor1, rotor1Base, rotor2, rotor2Base]
         switch (selectedObject.name) {
@@ -314,7 +352,7 @@ if (WEBGL.isWebGLAvailable()) {
 
   const cameraZoomOut = () => {
     zoomed = false
-    gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 42, onUpdate: () => alignCamera() })
+    gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 46, onUpdate: () => alignCamera() })
     gsap.to(camera.position, { duration: 1.5, ease: 'power1.out', x: 250, onUpdate: () => alignCamera() })
     gsap.to(camera.position, { duration: 1.5, ease: 'power1.out', y: 440, onUpdate: () => alignCamera() })
   }
@@ -325,7 +363,7 @@ if (WEBGL.isWebGLAvailable()) {
   }
 
   const rotors = {multiplier: 1}
-  const slowRotors = () => {gsap.to(rotors, { duration: 1.0, ease: 'power4.out', multiplier: 0.01 })}
+  const slowRotors = () => {gsap.to(rotors, { duration: 1.0, ease: 'power4.out', multiplier: 0.005 })}
   const fastRotors = () => {gsap.to(rotors, { duration: 1, ease: 'power4.out', multiplier: 1 })}
 
   const updateRotors = () => {
@@ -336,6 +374,8 @@ if (WEBGL.isWebGLAvailable()) {
     //debugArea.innerHTML = rotor1.rotation.x
   }
 
+  const slowDust = () => {video.pause()}
+  const fastDust = () => {video.play()}
 
   //UPDATE
   const update = () => {
@@ -356,12 +396,14 @@ if (WEBGL.isWebGLAvailable()) {
         if (!zoomed) {
           cameraZoomIn()
           slowRotors()
+          slowDust()
         }
       } else {
         hoverAnim.play()
 
         if (zoomed) cameraZoomOut()
         fastRotors()
+        fastDust()
       }
       //updateCamera()
     }
@@ -374,7 +416,7 @@ if (WEBGL.isWebGLAvailable()) {
   //window.setInterval(fixedUpdate, fixedUpdateFrequency)
 
   //RENDER
-  const render = () => composer.render(scene, camera)
+  const render = () => renderer.render(scene, camera)
 
   //RENDER LOOP
   const renderLoop = () => {
