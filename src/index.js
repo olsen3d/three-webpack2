@@ -236,6 +236,7 @@ if (WEBGL.isWebGLAvailable()) {
 
     const solarPanelCard = document.querySelector('#solarPanel')
     const rotorsCard = document.querySelector('#rotors')
+    const inspectInitialCard = document.querySelector('#inspectInitial')
 
     // eslint-disable-next-line complexity
     function checkIntersection() {
@@ -257,6 +258,7 @@ if (WEBGL.isWebGLAvailable()) {
             otherMeshes.forEach(mesh => {mesh.material = xRayMat})
             solarPanelCard.classList.add('inspectVisible')
             rotorsCard.classList.remove('inspectVisible')
+            inspectInitialCard.classList.remove('inspectVisible')
             break
           case 'rotor1':
           case 'rotor1Base':
@@ -268,14 +270,19 @@ if (WEBGL.isWebGLAvailable()) {
             otherMeshes.forEach(mesh => {mesh.material = xRayMat})
             solarPanelCard.classList.remove('inspectVisible')
             rotorsCard.classList.add('inspectVisible')
+            inspectInitialCard.classList.remove('inspectVisible')
             break
           default:
             solarPanelCard.classList.remove('inspectVisible')
             rotorsCard.classList.remove('inspectVisible')
+            inspectInitialCard.classList.add('inspectVisible')
             outlinePass.selectedObjects = []
             ingenuityMeshes.forEach(mesh => {mesh.material = hybridMat})
         }
       } else {
+        solarPanelCard.classList.remove('inspectVisible')
+        rotorsCard.classList.remove('inspectVisible')
+        inspectInitialCard.classList.add('inspectVisible')
         outlinePass.selectedObjects = [];
       }
     }

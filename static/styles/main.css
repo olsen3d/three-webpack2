@@ -166,7 +166,7 @@ p {
 H3 {
   font-family: header;
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   margin-top: 0;
   margin-bottom: 1rem;
 }
@@ -174,9 +174,9 @@ H3 {
 .inspectCopy {
   padding: 0 1rem;
   font-family: copy;
-  color: #eeeeee;
-  font-size: 0.8rem;
-  border-left: solid #eeeeee 3px;
+  color: #ddd;
+  font-size: 1rem;
+  border-left: solid #ddd 3px;
   word-break: break-word;
   overflow: hidden;
 }
