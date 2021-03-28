@@ -4,25 +4,13 @@
 /* eslint-disable max-statements */
 import * as THREE from 'three'
 import { WEBGL } from './webgl'
-import Stats from 'three/examples/jsm/libs/stats.module.js'
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
 import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader.js'
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
-import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 import gsap from 'gsap'
 
-//testing123
-
-//DEBUG
 
 const mouse = new THREE.Vector2()
-
-let outlinePass
 const raycaster = new THREE.Raycaster()
-
 const video = document.getElementById('video')
 
 //MAIN
@@ -31,21 +19,14 @@ if (WEBGL.isWebGLAvailable()) {
 
   //VARIABLES
 
-  let camera, scene, renderer, composer
-  let ingenuityController, cubeHelperMesh
+  let camera, scene, renderer
+  let ingenuityController
   let rotor1, rotor2, rotor1Base, rotor2Base, dustMesh, dustMesh2
   let canvasMouse = false
   let terrainMat
   const ingenuityMeshes = []
 
   const canvas = document.querySelector('#THREEContainer')
-
-  canvas.addEventListener('mouseenter', () => {
-    canvasMouse = true
-  })
-  canvas.addEventListener('mouseleave', () => {
-    canvasMouse = false
-  })
 
 
   //PRE-LOAD CONDITIONALS
@@ -74,21 +55,11 @@ if (WEBGL.isWebGLAvailable()) {
       scene.background = new THREE.Color( color )
     }
 
-    //DEBUG MODELS AND HELPERS
-    const cubeHelper = new THREE.BoxGeometry(150, 150, 150)
-    const materialWire = new THREE.MeshBasicMaterial( {color: 0x00ff00, wireframe: true} )
-    cubeHelperMesh = new THREE.Mesh(cubeHelper, materialWire)
-    //scene.add(cubeHelperMesh)
-
-    var gridHelper = new THREE.GridHelper(1000, 20, 0xff0000)
-    //scene.add(gridHelper)
-
         //GROUPS AND CONTROLLERS
         ingenuityController = new THREE.Group()
         scene.add(ingenuityController)
         ingenuityController.position.y = 210
-        //ingenuityController.add(cubeHelperMesh)
-    
+  
         //CAMERA
         camera = new THREE.PerspectiveCamera(
           46, //42
@@ -107,12 +78,12 @@ if (WEBGL.isWebGLAvailable()) {
     const loaderTEXTURE = new THREE.TextureLoader();
     const texture = loaderTEXTURE.load(
       '../static/textures/bgInspect.jpg',
-      () => {
-        rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
-        rt.fromEquirectangularTexture(renderer, texture);
-        hybridMat.envMap = rt
-        // scene.background = rt;
-      });
+        () => {
+          rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
+          rt.fromEquirectangularTexture(renderer, texture);
+          hybridMat.envMap = rt
+        }
+      )
 
     const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITY_TEXTURE_BAKED_01.jpg')
     const textureROCKS = loaderTEXTURE.load('../static/textures/TERRAIN_TEXTURE_03.jpg')
@@ -123,7 +94,6 @@ if (WEBGL.isWebGLAvailable()) {
       map: textureINGENUITY,
       specularMap: textureINGENUITY,
       reflectivity: 1,
-      //envMap: texture,
       combine: THREE.AddOperation,
       fog: false
     })
@@ -146,19 +116,17 @@ if (WEBGL.isWebGLAvailable()) {
     video.play()
     const videoTexture = new THREE.VideoTexture(video);
     const videoMaterial =  new THREE.MeshBasicMaterial(
-      {
-        map: textureDust,
-        alphaMap: videoTexture,
-        opacity: 1,
-        transparent: true,
-        fog: false,
-        // depthWrite: false,
-        // depthTest: false
-      } );
+        {
+          map: textureDust,
+          alphaMap: videoTexture,
+          opacity: 1,
+          transparent: true,
+          fog: false,
+        }
+      )
 
     const testPlane = new THREE.PlaneGeometry(600, 250, 0)
     const testPlane2 = new THREE.PlaneGeometry(1000, 400, 0)
-    const testMat = new THREE.MeshNormalMaterial()
     dustMesh = new THREE.Mesh(testPlane, videoMaterial)
     dustMesh.position.y = 270
     dustMesh.position.x = 225
@@ -207,7 +175,6 @@ if (WEBGL.isWebGLAvailable()) {
 
 
     //TERRAIN
-    //export1.glb
     loaderGLTF.load( '../static/models/terrainDraco2.gltf', function ( gltf ) {
       var terrain = gltf.scene;
       terrain.scale.set(1.5, 1.5, 1.5)
@@ -225,7 +192,7 @@ if (WEBGL.isWebGLAvailable()) {
 
     //RENDERER
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
-    renderer.setPixelRatio(1) //window.devicePixelRatio
+    renderer.setPixelRatio(1)
     renderer.setSize(600, 500)
     const container = document.getElementById( 'THREEWindow' )
     container.appendChild(renderer.domElement)
@@ -234,30 +201,12 @@ if (WEBGL.isWebGLAvailable()) {
     const threeCanvas = renderer.domElement;
 
 
-    //POST
-    composer = new EffectComposer(renderer)
-    const renderPass = new RenderPass(scene, camera)
-    composer.addPass(renderPass)
-    outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
-    composer.addPass(outlinePass)
-
-    const pass = new SMAAPass( window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio() );
-		composer.addPass( pass );
-
     function getCanvasRelativePosition(event) {
       const rect = threeCanvas.getBoundingClientRect();
       return {
         x: (event.clientX - rect.left) * threeCanvas.width  / rect.width,
         y: (event.clientY - rect.top ) * threeCanvas.height / rect.height,
       };
-    }
-
-    function setPickPosition(event) {
-      const pos = getCanvasRelativePosition(event);
-      mouse.x = (pos.x / threeCanvas.width ) *  2 - 1;
-      mouse.y = (pos.y / threeCanvas.height) * -2 + 1;  // note we flip Y
-
-      //checkIntersection()
     }
 
     const inspectSelectors = ['#solarPanel', '#rotors', '#inspectInitial', '#body', '#legs']
@@ -292,8 +241,7 @@ if (WEBGL.isWebGLAvailable()) {
     // eslint-disable-next-line complexity
     function checkIntersection() {
       raycaster.setFromCamera( mouse, camera )
-      const intersects = raycaster.intersectObject( scene, true )
-
+      const intersects = raycaster.intersectObject( ingenuityController, true )
       if ( intersects.length > 0 ) {
         let selectedObject = intersects[ 0 ].object;
         if (!selectedObject.name) selectedObject = intersects[ 1 ].object
@@ -326,8 +274,27 @@ if (WEBGL.isWebGLAvailable()) {
         switchInspectObjects(null)
       }
     }
-    window.addEventListener('pointermove', setPickPosition);
-    window.setInterval(checkIntersection, 500)
+
+    function setPickPosition(event) {
+      const pos = getCanvasRelativePosition(event);
+      mouse.x = (pos.x / threeCanvas.width ) *  2 - 1;
+      mouse.y = (pos.y / threeCanvas.height) * -2 + 1;  // note we flip Y
+
+      checkIntersection()
+    }
+
+
+    canvas.addEventListener('mouseenter', () => {
+      canvasMouse = true
+      window.addEventListener('pointermove', setPickPosition);
+    })
+
+    canvas.addEventListener('mouseleave', () => {
+      canvasMouse = false
+      switchInspectCopyElements('inspectInitial')
+      switchInspectObjects(null)
+      window.removeEventListener('pointermove', setPickPosition);
+    })
 
   }
 
@@ -339,7 +306,6 @@ if (WEBGL.isWebGLAvailable()) {
     isHovering = true
     hoverAnim = gsap.to(ingenuityController.position, { duration: 4, ease: 'back.inOut(4)', y: 200, repeat: -1, yoyo: true })
   }
-
 
   const alignCamera = () => {
     camera.lookAt(0, 340, 0)
@@ -370,9 +336,8 @@ if (WEBGL.isWebGLAvailable()) {
   const updateRotors = () => {
     if (rotor1.rotation.y > 360) rotor1.rotation.y = 0
     if (rotor2.rotation.y > 360) rotor2.rotation.y = 0
-    rotor1.rotation.y += 0.3 * rotors.multiplier //0.3
-    rotor2.rotation.y -= 0.4 * rotors.multiplier //0.4
-    //debugArea.innerHTML = rotor1.rotation.x
+    rotor1.rotation.y += 0.3 * rotors.multiplier
+    rotor2.rotation.y -= 0.4 * rotors.multiplier
   }
 
   const slowDust = () => {video.pause()}
@@ -384,16 +349,9 @@ if (WEBGL.isWebGLAvailable()) {
     if (modelReady) {
       if (!isHovering) startHover()
       updateRotors()
-
       if (canvasMouse) {
         hoverAnim.pause()
-
-        // camera.position.x = 250 + mouse.x * 70
-        // camera.position.y = 440 + mouse.y * 170
         updateCamera()
-        // camera.lookAt(0, 340, 0)
-        // camera.updateProjectionMatrix()
-
         if (!zoomed) {
           cameraZoomIn()
           slowRotors()
@@ -401,20 +359,13 @@ if (WEBGL.isWebGLAvailable()) {
         }
       } else {
         hoverAnim.play()
-
         if (zoomed) cameraZoomOut()
         fastRotors()
         fastDust()
       }
-      //updateCamera()
     }
 
   }
-
-  //FIXED UPDATE
-  //const fixedUpdate = () => {}
-  //const fixedUpdateFrequency = 33.3 //33.3ms ~30FPS
-  //window.setInterval(fixedUpdate, fixedUpdateFrequency)
 
   //RENDER
   const render = () => renderer.render(scene, camera)
