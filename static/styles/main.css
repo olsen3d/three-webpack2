@@ -6,6 +6,11 @@
 }
 
 @font-face {
+  font-family: 'copyBold'; 
+  src: url('../fonts/Roboto-Medium.ttf'); 
+}
+
+@font-face {
   font-family: 'header'; 
   src: url('../fonts/LEMONMILK-Medium.otf'); 
 }
@@ -177,10 +182,15 @@ H3 {
   padding: 0 1rem;
   font-family: copy;
   color: #ddd;
-  font-size: 1rem;
+  font-size: 0.9rem;
   border-left: solid #ddd 3px;
   word-break: break-word;
   overflow: hidden;
+}
+
+b {
+  color: #fff;
+  font-family: copyBold;
 }
 
 .inspectCard {

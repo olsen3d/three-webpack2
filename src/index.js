@@ -133,7 +133,7 @@ if (WEBGL.isWebGLAvailable()) {
       map: textureINGENUITY,
       transparent: true,
       opacity: 0.4,
-      fog: true
+      fog: false
     })
 
     terrainMat = new THREE.MeshBasicMaterial({
@@ -225,7 +225,7 @@ if (WEBGL.isWebGLAvailable()) {
 
     //RENDERER
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
-    renderer.setPixelRatio(window.devicePixelRatio)
+    renderer.setPixelRatio(1) //window.devicePixelRatio
     renderer.setSize(600, 500)
     const container = document.getElementById( 'THREEWindow' )
     container.appendChild(renderer.domElement)
@@ -244,7 +244,6 @@ if (WEBGL.isWebGLAvailable()) {
     const pass = new SMAAPass( window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio() );
 		composer.addPass( pass );
 
-    
     function getCanvasRelativePosition(event) {
       const rect = threeCanvas.getBoundingClientRect();
       return {
@@ -252,7 +251,7 @@ if (WEBGL.isWebGLAvailable()) {
         y: (event.clientY - rect.top ) * threeCanvas.height / rect.height,
       };
     }
-    
+
     function setPickPosition(event) {
       const pos = getCanvasRelativePosition(event);
       mouse.x = (pos.x / threeCanvas.width ) *  2 - 1;
@@ -261,67 +260,70 @@ if (WEBGL.isWebGLAvailable()) {
       //checkIntersection()
     }
 
-    /*
-    TerrainMesh
-    body
-    solarPanel
-    rotor1
-    rotor1Base
-    legs
-    */
+    const inspectSelectors = ['#solarPanel', '#rotors', '#inspectInitial', '#body', '#legs']
+    const inspectCopyElements = inspectSelectors.map(selector => document.querySelector(selector))
 
-    const solarPanelCard = document.querySelector('#solarPanel')
-    const rotorsCard = document.querySelector('#rotors')
-    const inspectInitialCard = document.querySelector('#inspectInitial')
+    const switchInspectCopyElements = elementId => {
+      const activeElement = inspectCopyElements.find(el => el.id === elementId)
+      const inactiveElements = inspectCopyElements.filter(el => el.id !== elementId)
+      activeElement.classList.add('inspectVisible')
+      inactiveElements.forEach(el => el.classList.remove('inspectVisible'))
+    }
+
+    const switchInspectObjects = object => {
+      if (!object) {
+        ingenuityMeshes.forEach(mesh => {mesh.material = hybridMat})
+        return
+        }
+
+      if (object === 'rotors') {
+        const rotorGroup = [rotor1, rotor1Base, rotor2, rotor2Base]
+        const otherMeshes = ingenuityMeshes.filter(mesh => !rotorGroup.includes(mesh))
+        rotorGroup.forEach(mesh => {mesh.material = hybridMat})
+        otherMeshes.forEach(mesh => {mesh.material = xRayMat})
+        return
+      }
+
+      const otherMeshes = ingenuityMeshes.filter(mesh => mesh.name !== object.name)
+      object.material = hybridMat
+      otherMeshes.forEach(mesh => {mesh.material = xRayMat})
+    }
 
     // eslint-disable-next-line complexity
     function checkIntersection() {
       raycaster.setFromCamera( mouse, camera )
-
       const intersects = raycaster.intersectObject( scene, true )
 
       if ( intersects.length > 0 ) {
         let selectedObject = intersects[ 0 ].object;
         if (!selectedObject.name) selectedObject = intersects[ 1 ].object
-        // console.log('first:', intersects[ 0 ].object.name, 'second:', intersects[ 1 ].object.name)
-        let otherMeshes = []
-        let rotorGroup = [rotor1, rotor1Base, rotor2, rotor2Base]
         switch (selectedObject.name) {
           case 'body':
+            switchInspectCopyElements('body')
+            switchInspectObjects(selectedObject)
+            break
           case 'solarPanel':
+            switchInspectCopyElements('solarPanel')
+            switchInspectObjects(selectedObject)
+            break
           case 'legs':
-            outlinePass.selectedObjects = [selectedObject]
-            selectedObject.material = hybridMat
-            otherMeshes = ingenuityMeshes.filter(mesh => mesh.name !== selectedObject.name)
-            otherMeshes.forEach(mesh => {mesh.material = xRayMat})
-            solarPanelCard.classList.add('inspectVisible')
-            rotorsCard.classList.remove('inspectVisible')
-            inspectInitialCard.classList.remove('inspectVisible')
+            switchInspectCopyElements('legs')
+            switchInspectObjects(selectedObject)
             break
           case 'rotor1':
           case 'rotor1Base':
           case 'rotor2':
           case 'rotor2Base':
-            outlinePass.selectedObjects = [...rotorGroup]
-            rotorGroup.forEach(mesh => {mesh.material = hybridMat})
-            otherMeshes = ingenuityMeshes.filter(mesh => !rotorGroup.includes(mesh))
-            otherMeshes.forEach(mesh => {mesh.material = xRayMat})
-            solarPanelCard.classList.remove('inspectVisible')
-            rotorsCard.classList.add('inspectVisible')
-            inspectInitialCard.classList.remove('inspectVisible')
+            switchInspectCopyElements('rotors')
+            switchInspectObjects('rotors')
             break
           default:
-            solarPanelCard.classList.remove('inspectVisible')
-            rotorsCard.classList.remove('inspectVisible')
-            inspectInitialCard.classList.add('inspectVisible')
-            outlinePass.selectedObjects = []
-            ingenuityMeshes.forEach(mesh => {mesh.material = hybridMat})
+            switchInspectCopyElements('inspectInitial')
+            switchInspectObjects(null)
         }
       } else {
-        solarPanelCard.classList.remove('inspectVisible')
-        rotorsCard.classList.remove('inspectVisible')
-        inspectInitialCard.classList.add('inspectVisible')
-        outlinePass.selectedObjects = [];
+        switchInspectCopyElements('inspectInitial')
+        switchInspectObjects(null)
       }
     }
     window.addEventListener('pointermove', setPickPosition);
@@ -338,7 +340,6 @@ if (WEBGL.isWebGLAvailable()) {
     hoverAnim = gsap.to(ingenuityController.position, { duration: 4, ease: 'back.inOut(4)', y: 200, repeat: -1, yoyo: true })
   }
 
-  //camera.position.set(250, 440, 500)
 
   const alignCamera = () => {
     camera.lookAt(0, 340, 0)
