@@ -81,7 +81,7 @@ p {
   flex-direction: row;
 }
 
-#THREEContainer {
+#THREEInspContainer {
   z-index: 99;
   padding: 0;
   border-radius: 1.5rem;
@@ -90,7 +90,7 @@ p {
   /* cursor: none; */
   cursor: url('../textures/inspectorCursor32.png') 16 16, auto;
 }
-#THREEWindow {
+#THREEInspWindow {
   width: 600px;
   height: 500px;
 }

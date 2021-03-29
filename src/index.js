@@ -3,30 +3,24 @@
 /* eslint-disable no-inner-declarations */
 /* eslint-disable max-statements */
 import * as THREE from 'three'
-import { WEBGL } from './webgl'
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
 import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader.js'
 import gsap from 'gsap'
 
-
-const mouse = new THREE.Vector2()
-const raycaster = new THREE.Raycaster()
-const video = document.getElementById('video')
-
 //MAIN
-
-if (WEBGL.isWebGLAvailable()) {
 
   //VARIABLES
 
-  let camera, scene, renderer
-  let ingenuityController
+  let inspCamera, inspScene, inspRenderer
+  let inspIngenuityController
   let rotor1, rotor2, rotor1Base, rotor2Base, dustMesh, dustMesh2
-  let canvasMouse = false
-  let terrainMat
   const ingenuityMeshes = []
+  const mouse = new THREE.Vector2()
+  const raycaster = new THREE.Raycaster()
+  const dustVideo = document.getElementById('dustVideo')
 
-  const canvas = document.querySelector('#THREEContainer')
+  const canvas = document.querySelector('#THREEInspContainer')
+  let canvasMouse = false
 
 
   //PRE-LOAD CONDITIONALS
@@ -44,49 +38,43 @@ if (WEBGL.isWebGLAvailable()) {
   function init() {
 
     //SCENE
-    scene = new THREE.Scene()
+    inspScene = new THREE.Scene()
 
-    //FOG
-    {
-      const near = 2000;
-      const far = 40000;
-      const color = 0xf8f4f0;
-      scene.fog = new THREE.Fog(color, near, far);
-      scene.background = new THREE.Color( color )
-    }
+    //GROUPS AND CONTROLLERS
+    inspIngenuityController = new THREE.Group()
+    inspScene.add(inspIngenuityController)
+    inspIngenuityController.position.y = 210
 
-        //GROUPS AND CONTROLLERS
-        ingenuityController = new THREE.Group()
-        scene.add(ingenuityController)
-        ingenuityController.position.y = 210
-  
-        //CAMERA
-        camera = new THREE.PerspectiveCamera(
-          46, //42
-          700 / 600,
-          1,
-          50000
-        )
-        camera.position.set(250, 340, 500)
-        camera.lookAt(0, 340, 0)
+    //CAMERA
+    inspCamera = new THREE.PerspectiveCamera(
+      46, //42
+      700 / 600,
+      1,
+      50000
+    )
+    inspCamera.position.set(250, 340, 500)
+    inspCamera.lookAt(0, 340, 0)
 
 
     //MATERIALS AND TEXTURES
 
     let hybridMat, xRayMat
-    let rt
-    const loaderTEXTURE = new THREE.TextureLoader();
-    const texture = loaderTEXTURE.load(
-      '../static/textures/bgInspect.jpg',
-        () => {
-          rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
-          rt.fromEquirectangularTexture(renderer, texture);
-          hybridMat.envMap = rt
-        }
-      )
+    let background360
+    const loaderTexture = new THREE.TextureLoader();
 
-    const textureINGENUITY = loaderTEXTURE.load('../static/textures/INGENUITY_TEXTURE_BAKED_01.jpg')
-    const textureROCKS = loaderTEXTURE.load('../static/textures/TERRAIN_TEXTURE_03.jpg')
+    const textureBG = loaderTexture.load(
+      '../static/textures/bgInspect3.jpg',
+        () => {
+          background360 = new THREE.WebGLCubeRenderTarget(textureBG.image.height);
+          background360.fromEquirectangularTexture(inspRenderer, textureBG);
+          hybridMat.envMap = background360
+          inspScene.background = background360
+        }
+    )
+
+    const textureINGENUITY = loaderTexture.load('../static/textures/INGENUITY_TEXTURE_BAKED_01.jpg')
+    const textureDust = loaderTexture.load('../static/textures/dust.jpg')
+    dustVideo.play()
 
 
     hybridMat = new THREE.MeshBasicMaterial({
@@ -106,40 +94,32 @@ if (WEBGL.isWebGLAvailable()) {
       fog: false
     })
 
-    terrainMat = new THREE.MeshBasicMaterial({
-      map: textureROCKS,
-      fog: true
-    })
-
-    const textureDust = loaderTEXTURE.load('../static/textures/dust.jpg')
-
-    video.play()
-    const videoTexture = new THREE.VideoTexture(video);
-    const videoMaterial =  new THREE.MeshBasicMaterial(
+    const dustVideoTexture = new THREE.VideoTexture(dustVideo);
+    const dustVideoMaterial =  new THREE.MeshBasicMaterial(
         {
           map: textureDust,
-          alphaMap: videoTexture,
+          alphaMap: dustVideoTexture,
           opacity: 1,
           transparent: true,
           fog: false,
         }
       )
 
-    const testPlane = new THREE.PlaneGeometry(600, 250, 0)
-    const testPlane2 = new THREE.PlaneGeometry(1000, 400, 0)
-    dustMesh = new THREE.Mesh(testPlane, videoMaterial)
+    const inspDustPlane01 = new THREE.PlaneGeometry(600, 250, 0)
+    const inspDustPlane02 = new THREE.PlaneGeometry(1000, 400, 0)
+    dustMesh = new THREE.Mesh(inspDustPlane01, dustVideoMaterial)
     dustMesh.position.y = 270
     dustMesh.position.x = 225
     dustMesh.position.z = 170
     dustMesh.rotation.y = THREE.Math.degToRad(25)
-    scene.add(dustMesh)
+    inspScene.add(dustMesh)
 
-    dustMesh2 = new THREE.Mesh(testPlane2, videoMaterial)
+    dustMesh2 = new THREE.Mesh(inspDustPlane02, dustVideoMaterial)
     dustMesh2.position.y = 260
     dustMesh2.position.x = -105
     dustMesh2.position.z = -170
     dustMesh2.rotation.y = THREE.Math.degToRad(25)
-    scene.add(dustMesh2)
+    inspScene.add(dustMesh2)
 
 
     //LOADERS
@@ -155,8 +135,8 @@ if (WEBGL.isWebGLAvailable()) {
       var model = gltf.scene;
       model.scale.set(1.25, 1.25, 1.25)
       model.position.y = -50
-      scene.add( model );
-      ingenuityController.add(model)
+      inspScene.add( model );
+      inspIngenuityController.add(model)
       model.traverse((o) => {
         if (o.isMesh) {
           o.material = hybridMat
@@ -174,31 +154,15 @@ if (WEBGL.isWebGLAvailable()) {
     } )
 
 
-    //TERRAIN
-    loaderGLTF.load( '../static/models/terrainDraco2.gltf', function ( gltf ) {
-      var terrain = gltf.scene;
-      terrain.scale.set(1.5, 1.5, 1.5)
-      terrain.position.y = -100
-      terrain.position.x = -2500
-      terrain.position.z = -300
-      terrain.traverse((o) => {
-        if (o.isMesh) o.material = terrainMat;
-      });
-      scene.add( terrain );
-    }, undefined, function ( error ) {
-      console.error( error );
-    } )
-
-
     //RENDERER
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
-    renderer.setPixelRatio(1)
-    renderer.setSize(600, 500)
-    const container = document.getElementById( 'THREEWindow' )
-    container.appendChild(renderer.domElement)
+    inspRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
+    inspRenderer.setPixelRatio(1)
+    inspRenderer.setSize(600, 500)
+    const container = document.getElementById( 'THREEInspWindow' )
+    container.appendChild(inspRenderer.domElement)
 
 
-    const threeCanvas = renderer.domElement;
+    const threeCanvas = inspRenderer.domElement;
 
 
     function getCanvasRelativePosition(event) {
@@ -240,8 +204,8 @@ if (WEBGL.isWebGLAvailable()) {
 
     // eslint-disable-next-line complexity
     function checkIntersection() {
-      raycaster.setFromCamera( mouse, camera )
-      const intersects = raycaster.intersectObject( ingenuityController, true )
+      raycaster.setFromCamera( mouse, inspCamera )
+      const intersects = raycaster.intersectObject( inspIngenuityController, true )
       if ( intersects.length > 0 ) {
         let selectedObject = intersects[ 0 ].object;
         if (!selectedObject.name) selectedObject = intersects[ 1 ].object
@@ -304,29 +268,29 @@ if (WEBGL.isWebGLAvailable()) {
 
   const startHover = () => {
     isHovering = true
-    hoverAnim = gsap.to(ingenuityController.position, { duration: 4, ease: 'back.inOut(4)', y: 200, repeat: -1, yoyo: true })
+    hoverAnim = gsap.to(inspIngenuityController.position, { duration: 4, ease: 'back.inOut(4)', y: 200, repeat: -1, yoyo: true })
   }
 
   const alignCamera = () => {
-    camera.lookAt(0, 340, 0)
-    camera.updateProjectionMatrix()
+    inspCamera.lookAt(0, 340, 0)
+    inspCamera.updateProjectionMatrix()
   }
 
   const cameraZoomIn = () => {
     zoomed = true
-    gsap.to(camera, { duration: 0.75, ease: 'power1.out', fov: 24, onUpdate: () => alignCamera() })
+    gsap.to(inspCamera, { duration: 0.75, ease: 'power1.out', fov: 24, onUpdate: () => alignCamera() })
   }
 
   const cameraZoomOut = () => {
     zoomed = false
-    gsap.to(camera, { duration: 0.5, ease: 'power1.out', fov: 46, onUpdate: () => alignCamera() })
-    gsap.to(camera.position, { duration: 1.5, ease: 'power1.out', x: 250, onUpdate: () => alignCamera() })
-    gsap.to(camera.position, { duration: 1.5, ease: 'power1.out', y: 440, onUpdate: () => alignCamera() })
+    gsap.to(inspCamera, { duration: 0.5, ease: 'power1.out', fov: 46, onUpdate: () => alignCamera() })
+    gsap.to(inspCamera.position, { duration: 1.5, ease: 'power1.out', x: 250, onUpdate: () => alignCamera() })
+    gsap.to(inspCamera.position, { duration: 1.5, ease: 'power1.out', y: 440, onUpdate: () => alignCamera() })
   }
 
   const updateCamera = () => {
-    gsap.to(camera.position, { duration: 1.5, ease: 'power1.out', x: 250 + mouse.x * 100, onUpdate: () => alignCamera() })
-    gsap.to(camera.position, { duration: 1.5, ease: 'power1.out', y: 440 + mouse.y * 220, onUpdate: () => alignCamera() })
+    gsap.to(inspCamera.position, { duration: 1.5, ease: 'power1.out', x: 250 + mouse.x * 100, onUpdate: () => alignCamera() })
+    gsap.to(inspCamera.position, { duration: 1.5, ease: 'power1.out', y: 440 + mouse.y * 220, onUpdate: () => alignCamera() })
   }
 
   const rotors = {multiplier: 1}
@@ -340,11 +304,11 @@ if (WEBGL.isWebGLAvailable()) {
     rotor2.rotation.y -= 0.4 * rotors.multiplier
   }
 
-  const slowDust = () => {video.pause()}
-  const fastDust = () => {video.play()}
+  const slowDust = () => {dustVideo.pause()}
+  const fastDust = () => {dustVideo.play()}
 
   //UPDATE
-  const update = () => {
+  const inspUpdate = () => {
 
     if (modelReady) {
       if (!isHovering) startHover()
@@ -368,21 +332,16 @@ if (WEBGL.isWebGLAvailable()) {
   }
 
   //RENDER
-  const render = () => renderer.render(scene, camera)
+  const inspRender = () => inspRenderer.render(inspScene, inspCamera)
 
   //RENDER LOOP
-  const renderLoop = () => {
+  const inspRenderLoop = () => {
     if (isRendering) {
-      update()
-      render()
-      requestAnimationFrame( renderLoop )
+      inspUpdate()
+      inspRender()
+      requestAnimationFrame( inspRenderLoop )
     }
   }
 
   init()
-  renderLoop()
-
-} else {
-  var warning = WEBGL.getWebGLErrorMessage()
-  document.body.appendChild(warning)
-}
+  inspRenderLoop()
